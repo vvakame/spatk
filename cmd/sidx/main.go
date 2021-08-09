@@ -16,6 +16,7 @@ import (
 
 var (
 	command       = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	packageIdent  = command.String("packageIdent", "", "package ident; default extract from -output value")
 	varNamePrefix = command.String("varNamePrefix", "", "var name prefix; default spannerIndex")
 	output        = command.String("output", "", "output file name; default srcdir/model_spanner_index.go")
 )
@@ -40,22 +41,29 @@ func realMain() error {
 		return errors.New("1 argument requires")
 	}
 
-	var pInfo *genbase.PackageInfo
 	var dir string
 	var err error
-	p := &genbase.Parser{SkipSemanticsCheck: true}
 	if len(args) == 1 && isDirectory(args[0]) {
 		dir = args[0]
-		pInfo, err = p.ParsePackageDir(dir)
-		if err != nil {
-			return err
-		}
 	} else {
 		dir = filepath.Dir(args[0])
-		pInfo, err = p.ParsePackageDir(dir)
+	}
+
+	if *output == "" {
+		baseName := "model_spanner_index.go"
+		*output = filepath.Join(dir, strings.ToLower(baseName))
+	}
+	log.Println(*output)
+
+	if *packageIdent == "" {
+		var pInfo *genbase.PackageInfo
+		p := &genbase.Parser{SkipSemanticsCheck: true}
+		pInfo, err = p.ParsePackageDir(filepath.Dir(*output))
 		if err != nil {
 			return err
 		}
+
+		*packageIdent = pInfo.Name()
 	}
 
 	if *varNamePrefix == "" {
@@ -68,7 +76,7 @@ func realMain() error {
 	}
 
 	b, err = sidx.Build(context.Background(), &sidx.Config{
-		PackageIdent:  pInfo.Name(),
+		PackageIdent:  *packageIdent,
 		DDL:           string(b),
 		VarNamePrefix: *varNamePrefix,
 	})
@@ -76,13 +84,7 @@ func realMain() error {
 		return err
 	}
 
-	outputName := *output
-	if outputName == "" {
-		baseName := "model_spanner_index.go"
-		outputName = filepath.Join(dir, strings.ToLower(baseName))
-	}
-	log.Println(outputName)
-	err = ioutil.WriteFile(outputName, b, 0644)
+	err = ioutil.WriteFile(*output, b, 0644)
 	if err != nil {
 		return err
 	}

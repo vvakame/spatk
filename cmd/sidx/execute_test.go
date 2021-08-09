@@ -13,6 +13,7 @@ func Test_execute(t *testing.T) {
 
 	cmd := exec.Command(
 		"go", "run", "./",
+		"-packageIdent", "foo",
 		"-output", generatedFilePath,
 		"./test.sql",
 	)
@@ -20,12 +21,11 @@ func Test_execute(t *testing.T) {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
+	t.Log("stdout", stdout.String())
+	t.Log("stderr", stderr.String())
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	t.Log("stdout", stdout.String())
-	t.Log("stderr", stderr.String())
 
 	b, err := os.ReadFile(generatedFilePath)
 	if err != nil {
