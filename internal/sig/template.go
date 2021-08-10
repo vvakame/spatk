@@ -66,5 +66,18 @@ func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) cop
 		copied.columns[{{ $idx }}].alias = aliasName
 		return copied
 	}
+	func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) {{$f.Name}}Cursor(order scur.Order) *scur.CursorParameter {
+		return &scur.CursorParameter{
+			Name:  table.{{$f.Name}}(),
+			Order: order,
+			ToValue: func(obj interface{}) interface{} {
+				v, ok := obj.(*{{ $st.SimpleName }})
+				if !ok || v == nil {
+					panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+				}
+				return v.{{$f.Name}}
+			},
+		}
+	}
 {{- end}}
 `

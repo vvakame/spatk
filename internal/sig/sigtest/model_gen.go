@@ -4,6 +4,7 @@ package sigtest
 
 import (
 	"fmt"
+	"github.com/vvakame/spatk/scur"
 )
 
 var spannerInfoModelA = spannerInfoModelATable{
@@ -69,6 +70,19 @@ func (table spannerInfoModelATable) IDAs(aliasName string) spannerInfoModelATabl
 	copied.columns[0].alias = aliasName
 	return copied
 }
+func (table spannerInfoModelATable) IDCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:  table.ID(),
+		Order: order,
+		ToValue: func(obj interface{}) interface{} {
+			v, ok := obj.(*ModelA)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.ID
+		},
+	}
+}
 func (table spannerInfoModelATable) Name() string {
 	column := table.columns[1]
 	columnName := column.name
@@ -84,6 +98,19 @@ func (table spannerInfoModelATable) NameAs(aliasName string) spannerInfoModelATa
 	copied := table.copy()
 	copied.columns[1].alias = aliasName
 	return copied
+}
+func (table spannerInfoModelATable) NameCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:  table.Name(),
+		Order: order,
+		ToValue: func(obj interface{}) interface{} {
+			v, ok := obj.(*ModelA)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.Name
+		},
+	}
 }
 func (table spannerInfoModelATable) UpdatedAt() string {
 	column := table.columns[2]
@@ -101,6 +128,19 @@ func (table spannerInfoModelATable) UpdatedAtAs(aliasName string) spannerInfoMod
 	copied.columns[2].alias = aliasName
 	return copied
 }
+func (table spannerInfoModelATable) UpdatedAtCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:  table.UpdatedAt(),
+		Order: order,
+		ToValue: func(obj interface{}) interface{} {
+			v, ok := obj.(*ModelA)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.UpdatedAt
+		},
+	}
+}
 func (table spannerInfoModelATable) CreatedAt() string {
 	column := table.columns[3]
 	columnName := column.name
@@ -116,6 +156,19 @@ func (table spannerInfoModelATable) CreatedAtAs(aliasName string) spannerInfoMod
 	copied := table.copy()
 	copied.columns[3].alias = aliasName
 	return copied
+}
+func (table spannerInfoModelATable) CreatedAtCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:  table.CreatedAt(),
+		Order: order,
+		ToValue: func(obj interface{}) interface{} {
+			v, ok := obj.(*ModelA)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.CreatedAt
+		},
+	}
 }
 
 var spannerInfoModelB = spannerInfoModelBTable{
@@ -181,6 +234,19 @@ func (table spannerInfoModelBTable) IDAs(aliasName string) spannerInfoModelBTabl
 	copied.columns[0].alias = aliasName
 	return copied
 }
+func (table spannerInfoModelBTable) IDCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:  table.ID(),
+		Order: order,
+		ToValue: func(obj interface{}) interface{} {
+			v, ok := obj.(*ModelBar)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.ID
+		},
+	}
+}
 func (table spannerInfoModelBTable) Name() string {
 	column := table.columns[1]
 	columnName := column.name
@@ -196,6 +262,19 @@ func (table spannerInfoModelBTable) NameAs(aliasName string) spannerInfoModelBTa
 	copied := table.copy()
 	copied.columns[1].alias = aliasName
 	return copied
+}
+func (table spannerInfoModelBTable) NameCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:  table.Name(),
+		Order: order,
+		ToValue: func(obj interface{}) interface{} {
+			v, ok := obj.(*ModelBar)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.Name
+		},
+	}
 }
 func (table spannerInfoModelBTable) UpdatedAt() string {
 	column := table.columns[2]
@@ -213,6 +292,19 @@ func (table spannerInfoModelBTable) UpdatedAtAs(aliasName string) spannerInfoMod
 	copied.columns[2].alias = aliasName
 	return copied
 }
+func (table spannerInfoModelBTable) UpdatedAtCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:  table.UpdatedAt(),
+		Order: order,
+		ToValue: func(obj interface{}) interface{} {
+			v, ok := obj.(*ModelBar)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.UpdatedAt
+		},
+	}
+}
 func (table spannerInfoModelBTable) CreatedAt() string {
 	column := table.columns[3]
 	columnName := column.name
@@ -228,4 +320,17 @@ func (table spannerInfoModelBTable) CreatedAtAs(aliasName string) spannerInfoMod
 	copied := table.copy()
 	copied.columns[3].alias = aliasName
 	return copied
+}
+func (table spannerInfoModelBTable) CreatedAtCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:  table.CreatedAt(),
+		Order: order,
+		ToValue: func(obj interface{}) interface{} {
+			v, ok := obj.(*ModelBar)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.CreatedAt
+		},
+	}
 }
