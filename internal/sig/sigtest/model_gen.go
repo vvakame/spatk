@@ -18,9 +18,10 @@ var spannerInfoModelA = spannerInfoModelATable{
 }
 
 type spannerInfoModelATable struct {
-	name    string
-	alias   string
-	columns []spannerInfoModelAColumn
+	name       string
+	alias      string
+	forceIndex string
+	columns    []spannerInfoModelAColumn
 }
 
 type spannerInfoModelAColumn struct {
@@ -29,14 +30,23 @@ type spannerInfoModelAColumn struct {
 }
 
 func (table spannerInfoModelATable) TableName() string {
-	if table.alias != "" {
-		return fmt.Sprintf("%s AS %s", table.name, table.alias)
+	tableName := table.name
+	if table.forceIndex != "" {
+		tableName = fmt.Sprintf("%s@{FORCE_INDEX=%s}", tableName, table.forceIndex)
 	}
-	return table.name
+	if table.alias != "" {
+		tableName = fmt.Sprintf("%s AS %s", tableName, table.alias)
+	}
+	return tableName
 }
 func (table spannerInfoModelATable) As(aliasName string) spannerInfoModelATable {
 	copied := table.copy()
 	copied.alias = aliasName
+	return copied
+}
+func (table spannerInfoModelATable) ForceIndex(indexName string) spannerInfoModelATable {
+	copied := table.copy()
+	copied.forceIndex = indexName
 	return copied
 }
 func (table spannerInfoModelATable) ColumnNames() []string {
@@ -182,9 +192,10 @@ var spannerInfoModelB = spannerInfoModelBTable{
 }
 
 type spannerInfoModelBTable struct {
-	name    string
-	alias   string
-	columns []spannerInfoModelBColumn
+	name       string
+	alias      string
+	forceIndex string
+	columns    []spannerInfoModelBColumn
 }
 
 type spannerInfoModelBColumn struct {
@@ -193,14 +204,23 @@ type spannerInfoModelBColumn struct {
 }
 
 func (table spannerInfoModelBTable) TableName() string {
-	if table.alias != "" {
-		return fmt.Sprintf("%s AS %s", table.name, table.alias)
+	tableName := table.name
+	if table.forceIndex != "" {
+		tableName = fmt.Sprintf("%s@{FORCE_INDEX=%s}", tableName, table.forceIndex)
 	}
-	return table.name
+	if table.alias != "" {
+		tableName = fmt.Sprintf("%s AS %s", tableName, table.alias)
+	}
+	return tableName
 }
 func (table spannerInfoModelBTable) As(aliasName string) spannerInfoModelBTable {
 	copied := table.copy()
 	copied.alias = aliasName
+	return copied
+}
+func (table spannerInfoModelBTable) ForceIndex(indexName string) spannerInfoModelBTable {
+	copied := table.copy()
+	copied.forceIndex = indexName
 	return copied
 }
 func (table spannerInfoModelBTable) ColumnNames() []string {

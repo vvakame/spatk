@@ -12,9 +12,10 @@ var {{ $st.VarPrefix }}{{ $st.TableName }} = {{ $st.VarPrefix }}{{ $st.TableName
 }
 
 type {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }} struct {
-	name    string
-	alias   string
-	columns []{{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.ColumnTypeSuffix }}
+	name       string
+	alias      string
+	forceIndex string
+	columns    []{{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.ColumnTypeSuffix }}
 }
 
 type {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.ColumnTypeSuffix }} struct {
@@ -23,14 +24,23 @@ type {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.ColumnTypeSuffix }} struct {
 }
 
 func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) {{ $st.TableNameMethod }}() string {
-	if table.alias != "" {
-		return fmt.Sprintf("%s AS %s", table.name, table.alias)
+	tableName := table.name
+	if table.forceIndex != "" {
+		tableName = fmt.Sprintf("%s@{FORCE_INDEX=%s}", tableName, table.forceIndex)
 	}
-	return table.name
+	if table.alias != "" {
+		tableName = fmt.Sprintf("%s AS %s", tableName, table.alias)
+	}
+	return tableName
 }
 func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) As(aliasName string) {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }} {
 	copied := table.copy()
 	copied.alias = aliasName
+	return copied
+}
+func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) ForceIndex(indexName string) {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }} {
+	copied := table.copy()
+	copied.forceIndex = indexName
 	return copied
 }
 func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) {{ $st.ColumnNamesMethod }}() []string {

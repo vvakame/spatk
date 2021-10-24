@@ -155,18 +155,6 @@ func (b *builder) Name(tableName string, at ...string) FromBuilder {
 	return b
 }
 
-func (b *builder) ForceIndex(name string) FromBuilder {
-	b.buf.WriteString("@{FORCE_INDEX=")
-	b.buf.WriteString(name)
-	b.buf.WriteString("}")
-
-	if !b.flagFrom {
-		b.writeError("unexpected FORCE_INDEX")
-	}
-
-	return b
-}
-
 func (b *builder) Where() WhereBuilder {
 	if b.currentStep == stepFrom {
 		b.currentStep = stepWhere

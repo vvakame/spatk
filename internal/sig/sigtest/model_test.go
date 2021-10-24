@@ -14,6 +14,9 @@ func TestGeneratedModel(t *testing.T) {
 			if v := spannerInfoModelA.As("A").TableName(); v != "ModelA AS A" {
 				t.Errorf("unexpected: %v", v)
 			}
+			if v := spannerInfoModelA.As("A").ForceIndex("IndexA").TableName(); v != "ModelA@{FORCE_INDEX=IndexA} AS A" {
+				t.Errorf("unexpected: %v", v)
+			}
 			if v := spannerInfoModelA.TableName(); v != "ModelA" {
 				t.Errorf("unexpected: %v", v)
 			}

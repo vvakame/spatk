@@ -29,7 +29,7 @@ func TestNewBuilder(t *testing.T) {
 					C("ID").C("CreatedAt", "AT").
 					CS("A", "B", "C").
 					From().
-					Name("KeyData").ForceIndex("KeyDataByDisabled").
+					Name("KeyData").
 					Where().
 					E("Disabled=@disabled").
 					E("PEMData", "NOT NULL").
@@ -37,21 +37,21 @@ func TestNewBuilder(t *testing.T) {
 					Limit("@limit")
 				return qb
 			},
-			expected: `SELECT ID, CreatedAt AT, A, B, C FROM KeyData@{FORCE_INDEX=KeyDataByDisabled} WHERE Disabled=@disabled AND PEMData NOT NULL ORDER BY CreatedAt DESC, KeyDataID ASC LIMIT @limit`,
+			expected: `SELECT ID, CreatedAt AT, A, B, C FROM KeyData WHERE Disabled=@disabled AND PEMData NOT NULL ORDER BY CreatedAt DESC, KeyDataID ASC LIMIT @limit`,
 		},
 		{
 			name: "simple SELECT separate",
 			builder: func() Builder {
 				qb := NewBuilder()
 				qb.Select().C("ID").C("CreatedAt", "AT")
-				qb.From().Name("KeyData").ForceIndex("KeyDataByDisabled")
+				qb.From().Name("KeyData")
 				qb.Where().E("Disabled=@disabled")
 				qb.Where().E("PEMData", "NOT NULL")
 				qb.OrderBy().O("CreatedAt DESC").O("KeyDataID", "ASC")
 				qb.Limit("@limit")
 				return qb
 			},
-			expected: `SELECT ID, CreatedAt AT FROM KeyData@{FORCE_INDEX=KeyDataByDisabled} WHERE Disabled=@disabled AND PEMData NOT NULL ORDER BY CreatedAt DESC, KeyDataID ASC LIMIT @limit`,
+			expected: `SELECT ID, CreatedAt AT FROM KeyData WHERE Disabled=@disabled AND PEMData NOT NULL ORDER BY CreatedAt DESC, KeyDataID ASC LIMIT @limit`,
 		},
 		{
 			name: "simple SELECT AS STRUCT",

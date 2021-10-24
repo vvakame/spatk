@@ -35,7 +35,6 @@ type DeleteBuilder interface {
 type FromBuilder interface {
 	VoidBuilder
 	Name(tableName string, at ...string) FromBuilder
-	ForceIndex(name string) FromBuilder
 	Where() WhereBuilder
 }
 
