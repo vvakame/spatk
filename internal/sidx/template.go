@@ -13,8 +13,8 @@ const fileTemplate = `
 {{ template "packageHeader" .}}
 {{- $b := . -}}
 {{- range $_, $idx := .Indices -}}
-// {{ $b.VarNamePrefix }}{{ $idx.Name.Name }} contains index for {{ $idx.TableName.Name }} table.
+// {{ $b.VarNamePrefix }}{{ $idx.Name }} contains index for {{ $idx.Table }} table.
 // "{{ $idx.SQL }}".
-const {{ $b.VarNamePrefix }}{{ $idx.Name.Name }} = "{{ $idx.Name.Name }}"
+const {{ $b.VarNamePrefix }}{{ $idx.Name }} = "{{ $idx.Name }}"
 {{ end -}}
 `
