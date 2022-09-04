@@ -151,6 +151,8 @@ func (b *BuildSource) parseField(st *BuildStruct, typeInfo *genbase.TypeInfo, fi
 // Emit generate wrapper code.
 func (b *BuildSource) Emit(args *[]string) ([]byte, error) {
 	b.g.AddImport("fmt", "")
+	b.g.AddImport("strings", "")
+	b.g.AddImport("github.com/vvakame/spatk/sidx", "")
 	b.g.AddImport("github.com/vvakame/spatk/scur", "")
 
 	b.g.PrintHeader("sig", args)

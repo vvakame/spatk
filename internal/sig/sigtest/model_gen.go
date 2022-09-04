@@ -5,6 +5,8 @@ package sigtest
 import (
 	"fmt"
 	"github.com/vvakame/spatk/scur"
+	"github.com/vvakame/spatk/sidx"
+	"strings"
 )
 
 var spannerInfoModelA = spannerInfoModelATable{
@@ -18,10 +20,11 @@ var spannerInfoModelA = spannerInfoModelATable{
 }
 
 type spannerInfoModelATable struct {
-	name       string
-	alias      string
-	forceIndex string
-	columns    []spannerInfoModelAColumn
+	name         string
+	alias        string
+	forceIndex   string
+	nullFiltered bool
+	columns      []spannerInfoModelAColumn
 }
 
 type spannerInfoModelAColumn struct {
@@ -31,8 +34,17 @@ type spannerInfoModelAColumn struct {
 
 func (table spannerInfoModelATable) TableName() string {
 	tableName := table.name
-	if table.forceIndex != "" {
-		tableName = fmt.Sprintf("%s@{FORCE_INDEX=%s}", tableName, table.forceIndex)
+	{
+		hints := make([]string, 0)
+		if table.forceIndex != "" {
+			hints = append(hints, fmt.Sprintf("FORCE_INDEX=%s", table.forceIndex))
+		}
+		if table.nullFiltered {
+			hints = append(hints, "spanner_emulator.disable_query_null_filtered_index_check=true")
+		}
+		if len(hints) != 0 {
+			tableName = fmt.Sprintf("%s@{%s}", tableName, strings.Join(hints, ","))
+		}
 	}
 	if table.alias != "" {
 		tableName = fmt.Sprintf("%s AS %s", tableName, table.alias)
@@ -44,9 +56,10 @@ func (table spannerInfoModelATable) As(aliasName string) spannerInfoModelATable 
 	copied.alias = aliasName
 	return copied
 }
-func (table spannerInfoModelATable) ForceIndex(indexName string) spannerInfoModelATable {
+func (table spannerInfoModelATable) ForceIndex(index *sidx.Index) spannerInfoModelATable {
 	copied := table.copy()
-	copied.forceIndex = indexName
+	copied.forceIndex = index.Name
+	copied.nullFiltered = index.NullFiltered
 	return copied
 }
 func (table spannerInfoModelATable) ColumnNames() []string {
@@ -192,10 +205,11 @@ var spannerInfoModelB = spannerInfoModelBTable{
 }
 
 type spannerInfoModelBTable struct {
-	name       string
-	alias      string
-	forceIndex string
-	columns    []spannerInfoModelBColumn
+	name         string
+	alias        string
+	forceIndex   string
+	nullFiltered bool
+	columns      []spannerInfoModelBColumn
 }
 
 type spannerInfoModelBColumn struct {
@@ -205,8 +219,17 @@ type spannerInfoModelBColumn struct {
 
 func (table spannerInfoModelBTable) TableName() string {
 	tableName := table.name
-	if table.forceIndex != "" {
-		tableName = fmt.Sprintf("%s@{FORCE_INDEX=%s}", tableName, table.forceIndex)
+	{
+		hints := make([]string, 0)
+		if table.forceIndex != "" {
+			hints = append(hints, fmt.Sprintf("FORCE_INDEX=%s", table.forceIndex))
+		}
+		if table.nullFiltered {
+			hints = append(hints, "spanner_emulator.disable_query_null_filtered_index_check=true")
+		}
+		if len(hints) != 0 {
+			tableName = fmt.Sprintf("%s@{%s}", tableName, strings.Join(hints, ","))
+		}
 	}
 	if table.alias != "" {
 		tableName = fmt.Sprintf("%s AS %s", tableName, table.alias)
@@ -218,9 +241,10 @@ func (table spannerInfoModelBTable) As(aliasName string) spannerInfoModelBTable 
 	copied.alias = aliasName
 	return copied
 }
-func (table spannerInfoModelBTable) ForceIndex(indexName string) spannerInfoModelBTable {
+func (table spannerInfoModelBTable) ForceIndex(index *sidx.Index) spannerInfoModelBTable {
 	copied := table.copy()
-	copied.forceIndex = indexName
+	copied.forceIndex = index.Name
+	copied.nullFiltered = index.NullFiltered
 	return copied
 }
 func (table spannerInfoModelBTable) ColumnNames() []string {
