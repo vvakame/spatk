@@ -25,8 +25,11 @@ const (
 )
 
 type builder struct {
-	buf      bytes.Buffer
-	errCount int
+	buf         bytes.Buffer
+	noIndent    bool
+	indentLevel int
+	lineHead    bool
+	errCount    int
 
 	currentStep step
 
@@ -34,6 +37,48 @@ type builder struct {
 	flagFrom    bool
 	flagWhere   bool
 	flagOrderBy bool
+}
+
+func (b *builder) writeToken(token string) {
+	if b.lineHead {
+		b.writeIndent()
+	} else {
+		b.buf.WriteString(" ")
+	}
+	b.buf.WriteString(token)
+}
+
+func (b *builder) writeTokenWithoutSpace(token string) {
+	if b.lineHead {
+		b.writeIndent()
+	}
+	b.buf.WriteString(token)
+}
+
+func (b *builder) incrementIndent() {
+	b.indentLevel += 1
+}
+func (b *builder) decrementIndent() {
+	if b.indentLevel > 0 {
+		b.indentLevel -= 1
+	}
+}
+
+func (b *builder) writeIndent() {
+	if b.noIndent {
+		return
+	}
+	b.buf.WriteString(strings.Repeat("  ", b.indentLevel))
+	b.lineHead = false
+}
+
+func (b *builder) newLine() {
+	if b.noIndent {
+		b.buf.WriteString(" ")
+		return
+	}
+	b.buf.WriteString("\n")
+	b.lineHead = true
 }
 
 func (b *builder) writeError(msg string) {
@@ -56,7 +101,8 @@ func (b *builder) Build() (string, error) {
 func (b *builder) Select() SelectBuilder {
 	if b.currentStep == stepInit {
 		b.currentStep = stepSelect
-		b.buf.WriteString("SELECT")
+		b.writeToken("SELECT")
+		b.incrementIndent()
 	} else if b.currentStep > stepSelect {
 		b.writeError("unexpected SELECT keyword")
 	}
@@ -67,7 +113,8 @@ func (b *builder) Select() SelectBuilder {
 func (b *builder) Delete() DeleteBuilder {
 	if b.currentStep == stepInit {
 		b.currentStep = stepDelete
-		b.buf.WriteString("DELETE")
+		b.writeToken("DELETE")
+		b.incrementIndent()
 	} else if b.currentStep > stepDelete {
 		b.writeError("unexpected DELETE keyword")
 	}
@@ -77,7 +124,7 @@ func (b *builder) Delete() DeleteBuilder {
 
 func (b *builder) AsStruct() SelectBuilder {
 	if !b.flagSelect {
-		b.buf.WriteString(" AS STRUCT")
+		b.writeToken("AS STRUCT")
 	} else {
 		b.writeError("unexpected AS STRUCT keyword")
 	}
@@ -86,17 +133,10 @@ func (b *builder) AsStruct() SelectBuilder {
 }
 
 func (b *builder) C(name string, at ...string) SelectBuilder {
-	if !b.flagSelect {
-		b.flagSelect = true
+	if len(at) == 0 {
+		b.CS(name)
 	} else {
-		b.buf.WriteString(",")
-	}
-
-	b.buf.WriteString(" ")
-	b.buf.WriteString(name)
-	if len(at) != 0 {
-		b.buf.WriteString(" ")
-		b.buf.WriteString(at[0])
+		b.CS(fmt.Sprintf("%s %s", name, at[0]))
 	}
 
 	if 2 <= len(at) {
@@ -113,12 +153,15 @@ func (b *builder) CS(names ...string) SelectBuilder {
 
 	if !b.flagSelect {
 		b.flagSelect = true
+		b.newLine()
 	} else {
-		b.buf.WriteString(",")
+		b.writeTokenWithoutSpace(",")
+		b.newLine()
 	}
 
-	b.buf.WriteString(" ")
-	b.buf.WriteString(strings.Join(names, ", "))
+	b.writeToken(names[0])
+
+	b.CS(names[1:]...)
 
 	return b
 }
@@ -126,7 +169,10 @@ func (b *builder) CS(names ...string) SelectBuilder {
 func (b *builder) From() FromBuilder {
 	if b.currentStep == stepSelect || b.currentStep == stepDelete {
 		b.currentStep = stepFrom
-		b.buf.WriteString(" FROM")
+		b.newLine()
+		b.decrementIndent()
+		b.writeToken("FROM")
+		b.incrementIndent()
 	} else if b.currentStep != stepFrom {
 		b.writeError("unexpected FROM keyword")
 	}
@@ -137,15 +183,15 @@ func (b *builder) From() FromBuilder {
 func (b *builder) Name(tableName string, at ...string) FromBuilder {
 	if !b.flagFrom {
 		b.flagFrom = true
+		b.newLine()
 	} else {
-		b.buf.WriteString(",")
+		b.writeTokenWithoutSpace(",")
+		b.newLine()
 	}
 
-	b.buf.WriteString(" ")
-	b.buf.WriteString(tableName)
+	b.writeToken(tableName)
 	if len(at) != 0 {
-		b.buf.WriteString(" ")
-		b.buf.WriteString(at[0])
+		b.writeToken(at[0])
 	}
 
 	if 2 <= len(at) {
@@ -158,7 +204,10 @@ func (b *builder) Name(tableName string, at ...string) FromBuilder {
 func (b *builder) Where() WhereBuilder {
 	if b.currentStep == stepFrom {
 		b.currentStep = stepWhere
-		b.buf.WriteString(" WHERE")
+		b.newLine()
+		b.decrementIndent()
+		b.writeToken("WHERE")
+		b.incrementIndent()
 	} else if b.currentStep != stepWhere {
 		b.writeError("unexpected WHERE keyword")
 	}
@@ -170,12 +219,14 @@ func (b *builder) E(token ...string) WhereBuilder {
 	if len(token) == 0 {
 		return b
 	}
+	b.newLine()
 	if b.flagWhere {
-		b.buf.WriteString(" AND")
+		b.writeToken("AND")
 	}
 
-	b.buf.WriteString(" ")
-	b.buf.WriteString(strings.Join(token, " "))
+	for _, t := range token {
+		b.writeToken(t)
+	}
 
 	// TODO AND OR とかが末尾にないかチェックしたほうがよい
 	b.flagWhere = true
@@ -186,7 +237,10 @@ func (b *builder) E(token ...string) WhereBuilder {
 func (b *builder) OrderBy() OrderByBuilder {
 	if b.currentStep == stepSelect || b.currentStep == stepFrom || b.currentStep == stepWhere {
 		b.currentStep = stepOrderBy
-		b.buf.WriteString(" ORDER BY")
+		b.newLine()
+		b.decrementIndent()
+		b.writeToken("ORDER BY")
+		b.incrementIndent()
 	} else if b.currentStep != stepOrderBy {
 		b.writeError("unexpected ORDER BY keyword")
 	}
@@ -197,12 +251,15 @@ func (b *builder) OrderBy() OrderByBuilder {
 func (b *builder) O(token ...string) OrderByBuilder {
 	if !b.flagOrderBy {
 		b.flagOrderBy = true
+		b.newLine()
 	} else {
-		b.buf.WriteString(",")
+		b.writeTokenWithoutSpace(",")
+		b.newLine()
 	}
 
-	b.buf.WriteString(" ")
-	b.buf.WriteString(strings.Join(token, " "))
+	for _, t := range token {
+		b.writeToken(t)
+	}
 
 	return b
 }
@@ -210,13 +267,14 @@ func (b *builder) O(token ...string) OrderByBuilder {
 func (b *builder) Limit(limit string) VoidBuilder {
 	if b.currentStep == stepSelect || b.currentStep == stepFrom || b.currentStep == stepWhere || b.currentStep == stepOrderBy {
 		b.currentStep = stepLimit
-		b.buf.WriteString(" LIMIT")
+		b.newLine()
+		b.decrementIndent()
+		b.writeToken("LIMIT")
 	} else {
 		b.writeError("unexpected LIMIT keyword")
 	}
 
-	b.buf.WriteString(" ")
-	b.buf.WriteString(limit)
+	b.writeToken(limit)
 
 	return b
 }
