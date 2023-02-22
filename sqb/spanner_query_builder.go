@@ -1,8 +1,18 @@
 package sqb
 
+type Option func(b *builder)
+
 // NewBuilder can use for Spanner statement building.
-func NewBuilder() Builder {
-	return &builder{}
+func NewBuilder(opts ...Option) Builder {
+	b := &builder{
+		lineHead: true,
+	}
+
+	for _, opt := range opts {
+		opt(b)
+	}
+
+	return b
 }
 
 // Builder provides functionality of Spanner statement building.

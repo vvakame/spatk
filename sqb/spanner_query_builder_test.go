@@ -1,7 +1,10 @@
 package sqb
 
 import (
+	"strings"
 	"testing"
+
+	"github.com/MakeNowJust/heredoc/v2"
 )
 
 func TestNewBuilder(t *testing.T) {
@@ -18,7 +21,19 @@ func TestNewBuilder(t *testing.T) {
 				qb.Select().C("1")
 				return qb
 			},
-			expected: `SELECT 1`,
+			expected: strings.TrimSpace(heredoc.Doc(`
+				SELECT
+				  1
+			`)),
+		},
+		{
+			name: "simple SELECT wo indent",
+			builder: func() Builder {
+				qb := NewBuilder(NoIndent())
+				qb.Select().C("1")
+				return qb
+			},
+			expected: heredoc.Doc("SELECT 1"),
 		},
 		{
 			name: "simple SELECT chain",
@@ -37,7 +52,23 @@ func TestNewBuilder(t *testing.T) {
 					Limit("@limit")
 				return qb
 			},
-			expected: `SELECT ID, CreatedAt AT, A, B, C FROM KeyData WHERE Disabled=@disabled AND PEMData NOT NULL ORDER BY CreatedAt DESC, KeyDataID ASC LIMIT @limit`,
+			expected: strings.TrimSpace(heredoc.Doc(`
+				SELECT
+				  ID,
+				  CreatedAt AT,
+				  A,
+				  B,
+				  C
+				FROM
+				  KeyData
+				WHERE
+				  Disabled=@disabled
+				  AND PEMData NOT NULL
+				ORDER BY
+				  CreatedAt DESC,
+				  KeyDataID ASC
+				LIMIT @limit
+			`)),
 		},
 		{
 			name: "simple SELECT separate",
@@ -51,7 +82,20 @@ func TestNewBuilder(t *testing.T) {
 				qb.Limit("@limit")
 				return qb
 			},
-			expected: `SELECT ID, CreatedAt AT FROM KeyData WHERE Disabled=@disabled AND PEMData NOT NULL ORDER BY CreatedAt DESC, KeyDataID ASC LIMIT @limit`,
+			expected: strings.TrimSpace(heredoc.Doc(`
+				SELECT
+				  ID,
+				  CreatedAt AT
+				FROM
+				  KeyData
+				WHERE
+				  Disabled=@disabled
+				  AND PEMData NOT NULL
+				ORDER BY
+				  CreatedAt DESC,
+				  KeyDataID ASC
+				LIMIT @limit
+			`)),
 		},
 		{
 			name: "simple SELECT AS STRUCT",
@@ -60,7 +104,10 @@ func TestNewBuilder(t *testing.T) {
 				qb.Select().AsStruct().C("*")
 				return qb
 			},
-			expected: `SELECT AS STRUCT *`,
+			expected: strings.TrimSpace(heredoc.Doc(`
+				SELECT AS STRUCT
+				  *
+			`)),
 		},
 		{
 			name: "simple DELETE",
@@ -69,7 +116,11 @@ func TestNewBuilder(t *testing.T) {
 				qb.Delete().From().Name("FOO")
 				return qb
 			},
-			expected: `DELETE FROM FOO`,
+			expected: strings.TrimSpace(heredoc.Doc(`
+				DELETE
+				FROM
+				  FOO
+			`)),
 		},
 		{
 			name: "simple DELETE chain",
@@ -84,7 +135,14 @@ func TestNewBuilder(t *testing.T) {
 					E("PEMData", "NOT NULL")
 				return qb
 			},
-			expected: `DELETE FROM KeyData WHERE Disabled=@disabled AND PEMData NOT NULL`,
+			expected: strings.TrimSpace(heredoc.Doc(`
+				DELETE
+				FROM
+				  KeyData
+				WHERE
+				  Disabled=@disabled
+				  AND PEMData NOT NULL
+			`)),
 		},
 		{
 			name: "error",
@@ -95,7 +153,11 @@ func TestNewBuilder(t *testing.T) {
 				qb.Limit("2")
 				return qb
 			},
-			wantError: "2 error(s) occured! SELECT ID AT !ERR1:`too many arguments: [AT UNKNOWN]`! LIMIT 1 !ERR2:`unexpected LIMIT keyword`! 2",
+			wantError: strings.TrimSpace(heredoc.Docf(`
+				2 error(s) occured! SELECT
+				  ID AT !ERR1:%[1]stoo many arguments: [AT UNKNOWN]%[1]s!
+				LIMIT 1 !ERR2:%[1]sunexpected LIMIT keyword%[1]s! 2
+			`, "`")),
 		},
 	}
 	for _, tt := range tests {
@@ -112,7 +174,7 @@ func TestNewBuilder(t *testing.T) {
 				t.Fatal(err)
 			}
 			if s != tt.expected {
-				t.Fatalf("unexpected: %v %v", s, tt.expected)
+				t.Fatalf("unexpected: %v. expected: %v", s, tt.expected)
 			}
 		})
 	}
