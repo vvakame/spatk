@@ -1,6 +1,6 @@
 module github.com/vvakame/spatk
 
-go 1.16
+go 1.20
 
 require (
 	cloud.google.com/go/spanner v1.30.0
