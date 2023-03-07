@@ -1,0 +1,58 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request_target: {}
+
+env:
+  GCLOUD_VERSION: "420.0.0"
+
+jobs:
+  test:
+    name: Test
+    runs-on:
+      labels:
+        - ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      spanner_emulator:
+        image: gcr.io/cloud-spanner-emulator/emulator:1.4.5
+        ports:
+          - "9010:9010"
+          - "9020:9020" # for health check
+        # ヘルスチェックしたかったけどdistrolessなのでロクなもの入ってない
+        # options: --health-cmd "curl http://localhost:9020 --silent --retry-connrefused" --health-interval 1s --health-timeout 30s
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Prepare dependencies
+        run: |-
+          go mod tidy
+      - uses: google-github-actions/setup-gcloud@v1
+        with:
+          version: ${{ env.GCLOUD_VERSION }}
+      - name: Prepare Spanner instance
+        env:
+          SPANNER_EMULATOR_PROJECT_ID: spatk-test
+          SPANNER_EMULATOR_INSTANCE_NAME: spatk-test-instance
+        run: |-
+          gcloud config set auth/disable_credentials true
+          gcloud config set project "${SPANNER_EMULATOR_PROJECT_ID}"
+          gcloud config set api_endpoint_overrides/spanner http://localhost:9020/
+          gcloud --project "${SPANNER_EMULATOR_PROJECT_ID}" spanner instances create "${SPANNER_EMULATOR_INSTANCE_NAME}" --config=emulator-config --nodes=1 --description "for testing"
+      - name: Run tests
+        env:
+          SPANNER_EMULATOR_HOST: "localhost:9010"
+          SPANNER_EMULATOR_PROJECT_ID: spatk-test
+          SPANNER_EMULATOR_INSTANCE_NAME: spatk-test-instance
+          SPANNER_EMULATOR_DB_NAME: spatk-test-db
+        run: |-
+          go test -v ./...
