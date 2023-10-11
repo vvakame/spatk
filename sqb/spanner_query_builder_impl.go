@@ -17,8 +17,10 @@ type step int
 const (
 	stepInit step = iota
 	stepSelect
+	stepUpdate
 	stepDelete
 	stepFrom
+	stepSet
 	stepWhere
 	stepOrderBy
 	stepLimit
@@ -34,6 +36,7 @@ type builder struct {
 	currentStep step
 
 	flagSelect  bool
+	flagSet     bool
 	flagFrom    bool
 	flagWhere   bool
 	flagOrderBy bool
@@ -103,9 +106,34 @@ func (b *builder) Select() SelectBuilder {
 		b.currentStep = stepSelect
 		b.writeToken("SELECT")
 		b.incrementIndent()
-	} else if b.currentStep > stepSelect {
+	} else if b.currentStep != stepSelect {
 		b.writeError("unexpected SELECT keyword")
 	}
+
+	return b
+}
+
+func (b *builder) Update(tableName string, at ...string) UpdateBuilder {
+	if b.currentStep == stepInit {
+		b.currentStep = stepUpdate
+		b.writeToken("UPDATE")
+		b.incrementIndent()
+	} else if b.currentStep != stepUpdate {
+		b.writeError("unexpected SELECT keyword")
+		return b
+	}
+
+	b.newLine()
+	b.writeToken(tableName)
+	if len(at) != 0 {
+		b.writeToken(at[0])
+	}
+
+	if 2 <= len(at) {
+		b.writeError(fmt.Sprintf("too many arguments: %v", at))
+	}
+
+	b.decrementIndent()
 
 	return b
 }
@@ -115,7 +143,7 @@ func (b *builder) Delete() DeleteBuilder {
 		b.currentStep = stepDelete
 		b.writeToken("DELETE")
 		b.incrementIndent()
-	} else if b.currentStep > stepDelete {
+	} else if b.currentStep != stepDelete {
 		b.writeError("unexpected DELETE keyword")
 	}
 
@@ -201,8 +229,40 @@ func (b *builder) Name(tableName string, at ...string) FromBuilder {
 	return b
 }
 
+func (b *builder) Set() SetBuilder {
+	if b.currentStep == stepUpdate {
+		b.currentStep = stepSet
+		b.newLine()
+		b.decrementIndent()
+		b.writeToken("SET")
+		b.incrementIndent()
+	} else if b.currentStep != stepSet {
+		b.writeError("unexpected SET keyword")
+	}
+
+	return b
+}
+
+func (b *builder) U(token ...string) SetBuilder {
+	if len(token) == 0 {
+		return b
+	}
+	if b.flagSet {
+		b.writeTokenWithoutSpace(",")
+	}
+	b.newLine()
+
+	for _, t := range token {
+		b.writeToken(t)
+	}
+
+	b.flagSet = true
+
+	return b
+}
+
 func (b *builder) Where() WhereBuilder {
-	if b.currentStep == stepFrom {
+	if b.currentStep == stepFrom || b.currentStep == stepSet {
 		b.currentStep = stepWhere
 		b.newLine()
 		b.decrementIndent()
