@@ -19,6 +19,7 @@ func NewBuilder(opts ...Option) Builder {
 type Builder interface {
 	VoidBuilder
 	Select() SelectBuilder
+	Update(tableName string, at ...string) UpdateBuilder
 	Delete() DeleteBuilder
 	From() FromBuilder
 	Where() WhereBuilder
@@ -35,6 +36,13 @@ type SelectBuilder interface {
 	From() FromBuilder
 }
 
+// UpdateBuilder provides functionality of UPDATE statement building.
+type UpdateBuilder interface {
+	VoidBuilder
+	Set() SetBuilder
+	Where() WhereBuilder
+}
+
 // DeleteBuilder provides functionality of DELETE statement building.
 type DeleteBuilder interface {
 	VoidBuilder
@@ -46,6 +54,12 @@ type FromBuilder interface {
 	VoidBuilder
 	Name(tableName string, at ...string) FromBuilder
 	Where() WhereBuilder
+}
+
+// SetBuilder provides functionality of SET clause building.
+type SetBuilder interface {
+	VoidBuilder
+	U(token ...string) SetBuilder
 }
 
 // WhereBuilder provides functionality of WHERE statement building.

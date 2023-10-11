@@ -110,6 +110,39 @@ func TestNewBuilder(t *testing.T) {
 			`)),
 		},
 		{
+			name: "simple UPDATE",
+			builder: func() Builder {
+				qb := NewBuilder()
+				qb.Update("FOO").Set().U("String", "=", "@s")
+				return qb
+			},
+			expected: strings.TrimSpace(heredoc.Doc(`
+				UPDATE
+				  FOO
+				SET
+				  String = @s
+			`)),
+		},
+		{
+			name: "simple UPDATE chain",
+			builder: func() Builder {
+				qb := NewBuilder()
+				qb.Update("FOO").Set().U("String", "=", "@s").U("Int = @int")
+				qb.Where().E("ID = @id").E("B = TRUE")
+				return qb
+			},
+			expected: strings.TrimSpace(heredoc.Doc(`
+				UPDATE
+				  FOO
+				SET
+				  String = @s,
+				  Int = @int
+				WHERE
+				  ID = @id
+				  AND B = TRUE
+			`)),
+		},
+		{
 			name: "simple DELETE",
 			builder: func() Builder {
 				qb := NewBuilder()
