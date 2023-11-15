@@ -98,6 +98,18 @@ func TestNewBuilder(t *testing.T) {
 			`)),
 		},
 		{
+			name: "simple SELECT DISTINCT",
+			builder: func() Builder {
+				qb := NewBuilder()
+				qb.Select().Distinct().C("Foo")
+				return qb
+			},
+			expected: strings.TrimSpace(heredoc.Doc(`
+				SELECT DISTINCT
+				  Foo
+			`)),
+		},
+		{
 			name: "simple SELECT AS STRUCT",
 			builder: func() Builder {
 				qb := NewBuilder()
