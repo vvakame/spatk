@@ -150,6 +150,16 @@ func (b *builder) Delete() DeleteBuilder {
 	return b
 }
 
+func (b *builder) Distinct() SelectBuilder {
+	if !b.flagSelect {
+		b.writeToken("DISTINCT")
+	} else {
+		b.writeError("unexpected DISTINCT keyword")
+	}
+
+	return b
+}
+
 func (b *builder) AsStruct() SelectBuilder {
 	if !b.flagSelect {
 		b.writeToken("AS STRUCT")

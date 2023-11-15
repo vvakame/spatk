@@ -30,6 +30,7 @@ type Builder interface {
 // SelectBuilder provides functionality of SELECT statement building.
 type SelectBuilder interface {
 	VoidBuilder
+	Distinct() SelectBuilder
 	AsStruct() SelectBuilder
 	C(name string, at ...string) SelectBuilder
 	CS(names ...string) SelectBuilder
