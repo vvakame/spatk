@@ -3,6 +3,8 @@ package sigtest
 import (
 	"reflect"
 	"testing"
+
+	"github.com/vvakame/spatk/sidx"
 )
 
 func TestGeneratedModel(t *testing.T) {
@@ -14,7 +16,21 @@ func TestGeneratedModel(t *testing.T) {
 			if v := spannerInfoModelA.As("A").TableName(); v != "ModelA AS A" {
 				t.Errorf("unexpected: %v", v)
 			}
-			if v := spannerInfoModelA.As("A").ForceIndex("IndexA").TableName(); v != "ModelA@{FORCE_INDEX=IndexA} AS A" {
+			if v := spannerInfoModelA.As("A").ForceIndex(&sidx.Index{Name: "IndexA"}).TableName(); v != "ModelA@{FORCE_INDEX=IndexA} AS A" {
+				t.Errorf("unexpected: %v", v)
+			}
+			if v := spannerInfoModelA.TableName(); v != "ModelA" {
+				t.Errorf("unexpected: %v", v)
+			}
+		})
+		t.Run("force index", func(t *testing.T) {
+			if v := spannerInfoModelA.TableName(); v != "ModelA" {
+				t.Errorf("unexpected: %v", v)
+			}
+			if v := spannerInfoModelA.As("A").TableName(); v != "ModelA AS A" {
+				t.Errorf("unexpected: %v", v)
+			}
+			if v := spannerInfoModelA.As("A").ForceIndex(&sidx.Index{Name: "IndexA", NullFiltered: true}).TableName(); v != "ModelA@{FORCE_INDEX=IndexA,spanner_emulator.disable_query_null_filtered_index_check=true} AS A" {
 				t.Errorf("unexpected: %v", v)
 			}
 			if v := spannerInfoModelA.TableName(); v != "ModelA" {

@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	goformat "go/format"
+	"strconv"
 	"text/template"
 
 	"cloud.google.com/go/spanner/spansql"
@@ -51,7 +53,18 @@ func Build(ctx context.Context, cfg *Config) ([]byte, error) {
 		Indices: indices,
 	}
 
-	tmpl := template.New("file")
+	tmpl := template.New("file").Funcs(map[string]interface{}{
+		"quote": func(v interface{}) (string, error) {
+			switch v := v.(type) {
+			case string:
+				return strconv.Quote(v), nil
+			case spansql.ID:
+				return strconv.Quote(string(v)), nil
+			default:
+				return "", fmt.Errorf("quote: unsupported type: %T", v)
+			}
+		},
+	})
 	tmpl, err = tmpl.Parse(fileTemplate)
 	if err != nil {
 		return nil, err

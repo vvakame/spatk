@@ -12,10 +12,11 @@ var {{ $st.VarPrefix }}{{ $st.TableName }} = {{ $st.VarPrefix }}{{ $st.TableName
 }
 
 type {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }} struct {
-	name       string
-	alias      string
-	forceIndex string
-	columns    []{{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.ColumnTypeSuffix }}
+	name         string
+	alias        string
+	forceIndex   string
+	nullFiltered bool
+	columns      []{{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.ColumnTypeSuffix }}
 }
 
 type {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.ColumnTypeSuffix }} struct {
@@ -25,8 +26,17 @@ type {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.ColumnTypeSuffix }} struct {
 
 func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) {{ $st.TableNameMethod }}() string {
 	tableName := table.name
-	if table.forceIndex != "" {
-		tableName = fmt.Sprintf("%s@{FORCE_INDEX=%s}", tableName, table.forceIndex)
+	{
+		hints := make([]string, 0)
+		if table.forceIndex != "" {
+			hints = append(hints, fmt.Sprintf("FORCE_INDEX=%s", table.forceIndex))
+		}
+		if table.nullFiltered {
+			hints = append(hints, "spanner_emulator.disable_query_null_filtered_index_check=true")
+		}
+		if len(hints) != 0 {
+			tableName = fmt.Sprintf("%s@{%s}", tableName, strings.Join(hints, ","))
+		}
 	}
 	if table.alias != "" {
 		tableName = fmt.Sprintf("%s AS %s", tableName, table.alias)
@@ -38,9 +48,10 @@ func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) As(
 	copied.alias = aliasName
 	return copied
 }
-func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) ForceIndex(indexName string) {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }} {
+func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) ForceIndex(index *sidx.Index) {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }} {
 	copied := table.copy()
-	copied.forceIndex = indexName
+	copied.forceIndex = index.Name
+	copied.nullFiltered = index.NullFiltered
 	return copied
 }
 func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) {{ $st.ColumnNamesMethod }}() []string {
