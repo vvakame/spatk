@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -96,7 +95,7 @@ func main() {
 		baseName := fmt.Sprintf("%s_spanner_info.go", typeInfos[0].Name())
 		outputName = filepath.Join(dir, strings.ToLower(baseName))
 	}
-	err = ioutil.WriteFile(outputName, src, 0644)
+	err = os.WriteFile(outputName, src, 0644)
 	if err != nil {
 		log.Fatalf("writing output: %s", err)
 	}

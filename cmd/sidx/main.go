@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -70,7 +69,7 @@ func realMain() error {
 		*varNamePrefix = "spannerIndex"
 	}
 
-	b, err := ioutil.ReadFile(args[0])
+	b, err := os.ReadFile(args[0])
 	if err != nil {
 		return err
 	}
@@ -84,7 +83,7 @@ func realMain() error {
 		return err
 	}
 
-	err = ioutil.WriteFile(*output, b, 0644)
+	err = os.WriteFile(*output, b, 0644)
 	if err != nil {
 		return err
 	}
