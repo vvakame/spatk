@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/spanner v1.53.1
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/favclip/genbase v1.1.0
-	google.golang.org/api v0.152.0
+	google.golang.org/api v0.153.0
 	google.golang.org/genproto v0.0.0-20231106174013-bbf56f31fb17
 )
 
