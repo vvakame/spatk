@@ -7,7 +7,7 @@ on:
   pull_request_target: {}
 
 env:
-  GCLOUD_VERSION: "450.0.0"
+  GCLOUD_VERSION: "497.0.0"
 
 jobs:
   test:
@@ -19,7 +19,7 @@ jobs:
       contents: read
     services:
       spanner_emulator:
-        image: gcr.io/cloud-spanner-emulator/emulator:1.5.11
+        image: gcr.io/cloud-spanner-emulator/emulator:1.5.25
         ports:
           - "9010:9010"
           - "9020:9020" # for health check
