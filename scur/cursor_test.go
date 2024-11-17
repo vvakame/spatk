@@ -16,11 +16,11 @@ var _ spanner.Decoder = (*FooID)(nil)
 
 type FooID string
 
-func (id FooID) EncodeSpanner() (interface{}, error) {
+func (id FooID) EncodeSpanner() (any, error) {
 	return string(id), nil
 }
 
-func (id *FooID) DecodeSpanner(input interface{}) error {
+func (id *FooID) DecodeSpanner(input any) error {
 	s, ok := input.(string)
 	if !ok {
 		return fmt.Errorf("unexpected id type: %T", input)
@@ -207,7 +207,7 @@ func TestCursor_WhereExpression(t *testing.T) {
 		name   string
 		cursor *scur.Cursor
 		sql    string
-		params map[string]interface{}
+		params map[string]any
 	}{
 		{
 			"1 column",
@@ -225,7 +225,7 @@ func TestCursor_WhereExpression(t *testing.T) {
 				  A > @cursor1
 				)
 			`),
-			map[string]interface{}{
+			map[string]any{
 				"cursor1": 1,
 			},
 		},
@@ -252,7 +252,7 @@ func TestCursor_WhereExpression(t *testing.T) {
 				  ( A = @cursor1 AND B < @cursor2 )
 				)
 			`),
-			map[string]interface{}{
+			map[string]any{
 				"cursor1": 1,
 				"cursor2": "b",
 			},
@@ -287,7 +287,7 @@ func TestCursor_WhereExpression(t *testing.T) {
 				  ( A = @cursor1 AND B = @cursor2 AND C > @cursor3 )
 				)
 			`),
-			map[string]interface{}{
+			map[string]any{
 				"cursor1": 1,
 				"cursor2": "b",
 				"cursor3": 1.25,
