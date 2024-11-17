@@ -84,7 +84,7 @@ func (table spannerInfoModelATable) IDCursor(order scur.Order) *scur.CursorParam
 	return &scur.CursorParameter{
 		Name:  table.ID(),
 		Order: order,
-		ToValue: func(obj interface{}) interface{} {
+		ToValue: func(obj any) any {
 			v, ok := obj.(*ModelA)
 			if !ok || v == nil {
 				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
@@ -113,7 +113,7 @@ func (table spannerInfoModelATable) NameCursor(order scur.Order) *scur.CursorPar
 	return &scur.CursorParameter{
 		Name:  table.Name(),
 		Order: order,
-		ToValue: func(obj interface{}) interface{} {
+		ToValue: func(obj any) any {
 			v, ok := obj.(*ModelA)
 			if !ok || v == nil {
 				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
@@ -142,7 +142,7 @@ func (table spannerInfoModelATable) UpdatedAtCursor(order scur.Order) *scur.Curs
 	return &scur.CursorParameter{
 		Name:  table.UpdatedAt(),
 		Order: order,
-		ToValue: func(obj interface{}) interface{} {
+		ToValue: func(obj any) any {
 			v, ok := obj.(*ModelA)
 			if !ok || v == nil {
 				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
@@ -171,7 +171,7 @@ func (table spannerInfoModelATable) CreatedAtCursor(order scur.Order) *scur.Curs
 	return &scur.CursorParameter{
 		Name:  table.CreatedAt(),
 		Order: order,
-		ToValue: func(obj interface{}) interface{} {
+		ToValue: func(obj any) any {
 			v, ok := obj.(*ModelA)
 			if !ok || v == nil {
 				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
@@ -258,7 +258,7 @@ func (table spannerInfoModelBTable) IDCursor(order scur.Order) *scur.CursorParam
 	return &scur.CursorParameter{
 		Name:  table.ID(),
 		Order: order,
-		ToValue: func(obj interface{}) interface{} {
+		ToValue: func(obj any) any {
 			v, ok := obj.(*ModelBar)
 			if !ok || v == nil {
 				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
@@ -287,7 +287,7 @@ func (table spannerInfoModelBTable) NameCursor(order scur.Order) *scur.CursorPar
 	return &scur.CursorParameter{
 		Name:  table.Name(),
 		Order: order,
-		ToValue: func(obj interface{}) interface{} {
+		ToValue: func(obj any) any {
 			v, ok := obj.(*ModelBar)
 			if !ok || v == nil {
 				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
@@ -316,7 +316,7 @@ func (table spannerInfoModelBTable) UpdatedAtCursor(order scur.Order) *scur.Curs
 	return &scur.CursorParameter{
 		Name:  table.UpdatedAt(),
 		Order: order,
-		ToValue: func(obj interface{}) interface{} {
+		ToValue: func(obj any) any {
 			v, ok := obj.(*ModelBar)
 			if !ok || v == nil {
 				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
@@ -345,7 +345,7 @@ func (table spannerInfoModelBTable) CreatedAtCursor(order scur.Order) *scur.Curs
 	return &scur.CursorParameter{
 		Name:  table.CreatedAt(),
 		Order: order,
-		ToValue: func(obj interface{}) interface{} {
+		ToValue: func(obj any) any {
 			v, ok := obj.(*ModelBar)
 			if !ok || v == nil {
 				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))

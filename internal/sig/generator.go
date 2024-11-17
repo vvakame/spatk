@@ -186,7 +186,7 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 		fields = append(fields, f)
 	}
 	buf := bytes.NewBufferString("")
-	err = tmpl.Execute(buf, map[string]interface{}{
+	err = tmpl.Execute(buf, map[string]any{
 		"VarPrefix":         varPrefix,
 		"TableTypeSuffix":   "Table",
 		"ColumnTypeSuffix":  "Column",

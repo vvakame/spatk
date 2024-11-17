@@ -80,7 +80,7 @@ func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) cop
 		return &scur.CursorParameter{
 			Name:  table.{{$f.Name}}(),
 			Order: order,
-			ToValue: func(obj interface{}) interface{} {
+			ToValue: func(obj any) any {
 				v, ok := obj.(*{{ $st.SimpleName }})
 				if !ok || v == nil {
 					panic(fmt.Sprintf("unexpected cursor object type: %T", obj))

@@ -33,7 +33,7 @@ func (cursor *Cursor) Clone() *Cursor {
 	return newCursor
 }
 
-func (cursor *Cursor) SetValue(obj interface{}) {
+func (cursor *Cursor) SetValue(obj any) {
 	for _, p := range cursor.params {
 		p.Value = p.ToValue(obj)
 	}
@@ -43,13 +43,13 @@ func (cursor *Cursor) SetValue(obj interface{}) {
 type CursorParameter struct {
 	Name    string
 	Order   Order
-	ToValue func(obj interface{}) interface{}
-	Value   interface{}
+	ToValue func(obj any) any
+	Value   any
 }
 
 // EncodeParameters is encode cursor parameters value to string format.
 func (cursor *Cursor) EncodeParameters() (string, error) {
- 	var buf bytes.Buffer
+	var buf bytes.Buffer
 	for idx, p := range cursor.params {
 		err := encodeParameter(&buf, p.Value)
 		if err != nil {
@@ -83,12 +83,12 @@ func DecodeCursorParameters(cursor *Cursor, s string) error {
 }
 
 // WhereExpression returns part of where expression about cursor.
-func (cursor *Cursor) WhereExpression() (string, map[string]interface{}, error) {
+func (cursor *Cursor) WhereExpression() (string, map[string]any, error) {
 	if len(cursor.params) == 0 {
 		return "", nil, errors.New("cursor length is zero")
 	}
 
-	params := make(map[string]interface{})
+	params := make(map[string]any)
 	var buf bytes.Buffer
 	buf.WriteString("(\n")
 	for idx1, p1 := range cursor.params {

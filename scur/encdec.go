@@ -23,7 +23,7 @@ const (
 	cursorParameterTypeTime
 )
 
-func encodeParameter(w io.StringWriter, v interface{}) error {
+func encodeParameter(w io.StringWriter, v any) error {
 	// NOTE : をdelimiterに使うのでこれが出現しないようにしないようにやる必要がある
 	switch v := v.(type) {
 	case string:
@@ -61,7 +61,7 @@ func encodeParameter(w io.StringWriter, v interface{}) error {
 	return nil
 }
 
-func decodeParameter(s string) (interface{}, error) {
+func decodeParameter(s string) (any, error) {
 	if len(s) < 2 {
 		return nil, fmt.Errorf("unexpected encoded value: %s", s)
 	}
