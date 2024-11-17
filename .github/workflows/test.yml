@@ -26,7 +26,7 @@ jobs:
         # ヘルスチェックしたかったけどdistrolessなのでロクなもの入ってない
         # options: --health-cmd "curl http://localhost:9020 --silent --retry-connrefused" --health-interval 1s --health-timeout 30s
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
