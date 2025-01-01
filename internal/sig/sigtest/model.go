@@ -17,7 +17,7 @@ type ModelA struct {
 
 // +sig
 type ModelBar struct {
-	TableName string `spanner:"-" sig:"table,ModelB"`
+	TableName string   `spanner:"-" sig:"table=ModelB"`
 	ID        ModelBID `spanner:"ModelBID"`
 	Name      string
 	UpdatedAt time.Time
