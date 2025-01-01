@@ -2,6 +2,7 @@ package scur_test
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"testing"
 	"time"
@@ -291,6 +292,46 @@ func TestCursor_WhereExpression(t *testing.T) {
 				"cursor1": 1,
 				"cursor2": "b",
 				"cursor3": 1.25,
+			},
+		},
+		{
+			"min value",
+			func() *scur.Cursor {
+				cursor := scur.New()
+				cursor.Push(&scur.CursorParameter{
+					Name:     "A",
+					Order:    scur.OrderAsc,
+					MinValue: math.MinInt,
+				})
+				return cursor
+			}(),
+			heredoc.Doc(`
+				(
+				  A > @cursor1
+				)
+			`),
+			map[string]any{
+				"cursor1": math.MinInt,
+			},
+		},
+		{
+			"max value",
+			func() *scur.Cursor {
+				cursor := scur.New()
+				cursor.Push(&scur.CursorParameter{
+					Name:     "A",
+					Order:    scur.OrderDesc,
+					MaxValue: math.MaxInt,
+				})
+				return cursor
+			}(),
+			heredoc.Doc(`
+				(
+				  A < @cursor1
+				)
+			`),
+			map[string]any{
+				"cursor1": math.MaxInt,
 			},
 		},
 	}
