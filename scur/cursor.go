@@ -41,13 +41,15 @@ func (cursor *Cursor) SetValue(obj any) {
 
 // CursorParameter is single column info for spanner cursor.
 type CursorParameter struct {
-	Name    string
-	Order   Order
-	ToValue func(obj any) any
-	Value   any
+	Name     string
+	Order    Order
+	ToValue  func(obj any) any
+	Value    any
+	MinValue any
+	MaxValue any
 }
 
-// EncodeParameters is encode cursor parameters value to string format.
+// EncodeParameters is encoding cursor parameters value to string format.
 func (cursor *Cursor) EncodeParameters() (string, error) {
 	var buf bytes.Buffer
 	for idx, p := range cursor.params {
@@ -93,7 +95,16 @@ func (cursor *Cursor) WhereExpression() (string, map[string]any, error) {
 	buf.WriteString("(\n")
 	for idx1, p1 := range cursor.params {
 		paramName := fmt.Sprintf("cursor%d", idx1+1)
-		params[paramName] = p1.Value
+		switch {
+		case p1.Value != nil:
+			params[paramName] = p1.Value
+		case p1.Order == OrderAsc && p1.MinValue != nil:
+			params[paramName] = p1.MinValue
+		case p1.Order == OrderDesc && p1.MaxValue != nil:
+			params[paramName] = p1.MaxValue
+		default:
+			return "", nil, errors.New("cursor value is nil")
+		}
 
 		buf.WriteString(" ")
 		if len(cursor.params) != 1 {
