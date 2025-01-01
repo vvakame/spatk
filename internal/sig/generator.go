@@ -2,6 +2,7 @@ package sig
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"strings"
 	"text/template"
@@ -36,7 +37,7 @@ type BuildField struct {
 type BuildTag struct {
 	field *BuildField
 
-	TableName string // e.g. `sig:"table,FooTable"`
+	TableName string // e.g. `sig:"table=FooTable"`
 	Name      string
 	Ignore    bool // e.g. Secret string `spanner:"-"`
 }
@@ -138,8 +139,15 @@ func (b *BuildSource) parseField(st *BuildStruct, typeInfo *genbase.TypeInfo, fi
 				tag.Name = tagText
 			} else if key == "sig" {
 				tagText := structTag.Get("sig")
-				if strings.HasPrefix(tagText, "table,") {
-					tag.TableName = tagText[len("table,"):]
+				attrs := strings.Split(tagText, ",")
+				for _, attr := range attrs {
+					attr = strings.TrimSpace(attr)
+					switch {
+					case strings.HasPrefix(tagText, "table="):
+						tag.TableName = tagText[len("table="):]
+					default:
+						return fmt.Errorf("unsupported attribute: %s", attr)
+					}
 				}
 			}
 		}
@@ -172,30 +180,8 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 		return err
 	}
 
-	var varPrefix string
-	if st.Private {
-		varPrefix = "spannerInfo"
-	} else {
-		varPrefix = "SpannerInfo"
-	}
-	var fields []*BuildField
-	for _, f := range st.Fields {
-		if f.Tag.Ignore {
-			continue
-		}
-		fields = append(fields, f)
-	}
 	buf := bytes.NewBufferString("")
-	err = tmpl.Execute(buf, map[string]any{
-		"VarPrefix":         varPrefix,
-		"TableTypeSuffix":   "Table",
-		"ColumnTypeSuffix":  "Column",
-		"TableNameMethod":   "TableName",
-		"ColumnNamesMethod": "ColumnNames",
-		"SimpleName":        st.SimpleName(),
-		"TableName":         st.TableName(),
-		"Fields":            fields,
-	})
+	err = tmpl.Execute(buf, st)
 	if err != nil {
 		return err
 	}
@@ -203,6 +189,29 @@ func (st *BuildStruct) emit(g *genbase.Generator) error {
 	g.Printf("%s", buf.String())
 
 	return nil
+}
+
+func (st *BuildStruct) VarPrefix() string {
+	if st.Private {
+		return "spannerInfo"
+	}
+	return "SpannerInfo"
+}
+
+func (st *BuildStruct) TableTypeSuffix() string {
+	return "Table"
+}
+
+func (st *BuildStruct) ColumnTypeSuffix() string {
+	return "Column"
+}
+
+func (st *BuildStruct) TableNameMethod() string {
+	return "TableName"
+}
+
+func (st *BuildStruct) ColumnNamesMethod() string {
+	return "ColumnNames"
 }
 
 // SimpleName returns struct type name.
@@ -218,6 +227,17 @@ func (st *BuildStruct) TableName() string {
 		}
 	}
 	return st.SimpleName()
+}
+
+func (st *BuildStruct) EnabledFields() []*BuildField {
+	var fields []*BuildField
+	for _, f := range st.Fields {
+		if f.Tag.Ignore {
+			continue
+		}
+		fields = append(fields, f)
+	}
+	return fields
 }
 
 // ColumnName returns column name from field.
