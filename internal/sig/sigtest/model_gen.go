@@ -633,3 +633,162 @@ func (table spannerInfoModelCTable) LocalType2Cursor(order scur.Order) *scur.Cur
 		},
 	}
 }
+
+var spannerInfoModelD = spannerInfoModelDTable{
+	name: "ModelD",
+	columns: []spannerInfoModelDColumn{
+		{name: "ModelDID"},
+		{name: "IntValue"},
+		{name: "BoolValue"},
+	},
+}
+
+type spannerInfoModelDTable struct {
+	name       string
+	alias      string
+	forceIndex string
+	columns    []spannerInfoModelDColumn
+}
+
+type spannerInfoModelDColumn struct {
+	name  string
+	alias string
+}
+
+func (table spannerInfoModelDTable) TableName() string {
+	tableName := table.name
+	if table.forceIndex != "" {
+		tableName = fmt.Sprintf("%s@{FORCE_INDEX=%s}", tableName, table.forceIndex)
+	}
+	if table.alias != "" {
+		tableName = fmt.Sprintf("%s AS %s", tableName, table.alias)
+	}
+	return tableName
+}
+
+func (table spannerInfoModelDTable) As(aliasName string) spannerInfoModelDTable {
+	copied := table.copy()
+	copied.alias = aliasName
+	return copied
+}
+
+func (table spannerInfoModelDTable) ForceIndex(indexName string) spannerInfoModelDTable {
+	copied := table.copy()
+	copied.forceIndex = indexName
+	return copied
+}
+
+func (table spannerInfoModelDTable) ColumnNames() []string {
+	return []string{
+		table.ID(),
+		table.IntValue(),
+		table.BoolValue(),
+	}
+}
+
+func (table spannerInfoModelDTable) copy() spannerInfoModelDTable {
+	copied := table
+	columns := make([]spannerInfoModelDColumn, len(table.columns))
+	copy(columns, table.columns)
+	copied.columns = columns
+	return copied
+}
+func (table spannerInfoModelDTable) ID() string {
+	column := table.columns[0]
+	columnName := column.name
+	if table.alias != "" {
+		columnName = fmt.Sprintf("%s.%s", table.alias, columnName)
+	}
+	if column.alias != "" {
+		return fmt.Sprintf("%s AS %s", columnName, column.alias)
+	}
+	return columnName
+}
+
+func (table spannerInfoModelDTable) IDAs(aliasName string) spannerInfoModelDTable {
+	copied := table.copy()
+	copied.columns[0].alias = aliasName
+	return copied
+}
+
+func (table spannerInfoModelDTable) IDCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:     table.ID(),
+		Order:    order,
+		MinValue: scur.StringMinValue(),
+		MaxValue: scur.StringMaxValue(),
+		ToValue: func(obj any) any {
+			v, ok := obj.(*ModelD)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.ID
+		},
+	}
+}
+
+func (table spannerInfoModelDTable) IntValue() string {
+	column := table.columns[1]
+	columnName := column.name
+	if table.alias != "" {
+		columnName = fmt.Sprintf("%s.%s", table.alias, columnName)
+	}
+	if column.alias != "" {
+		return fmt.Sprintf("%s AS %s", columnName, column.alias)
+	}
+	return columnName
+}
+
+func (table spannerInfoModelDTable) IntValueAs(aliasName string) spannerInfoModelDTable {
+	copied := table.copy()
+	copied.columns[1].alias = aliasName
+	return copied
+}
+
+func (table spannerInfoModelDTable) IntValueCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:     table.IntValue(),
+		Order:    order,
+		MinValue: scur.Int64MinValue(),
+		MaxValue: scur.Int64MaxValue(),
+		ToValue: func(obj any) any {
+			v, ok := obj.(*ModelD)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.IntValue
+		},
+	}
+}
+
+func (table spannerInfoModelDTable) BoolValue() string {
+	column := table.columns[2]
+	columnName := column.name
+	if table.alias != "" {
+		columnName = fmt.Sprintf("%s.%s", table.alias, columnName)
+	}
+	if column.alias != "" {
+		return fmt.Sprintf("%s AS %s", columnName, column.alias)
+	}
+	return columnName
+}
+
+func (table spannerInfoModelDTable) BoolValueAs(aliasName string) spannerInfoModelDTable {
+	copied := table.copy()
+	copied.columns[2].alias = aliasName
+	return copied
+}
+
+func (table spannerInfoModelDTable) BoolValueCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:  table.BoolValue(),
+		Order: order,
+		ToValue: func(obj any) any {
+			v, ok := obj.(*ModelD)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.BoolValue
+		},
+	}
+}

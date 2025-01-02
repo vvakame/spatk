@@ -1,6 +1,7 @@
 package scur
 
 import (
+	"math"
 	"strings"
 	"time"
 )
@@ -11,6 +12,14 @@ func StringMinValue() string {
 
 func StringMaxValue() string {
 	return strings.Repeat("\uffff", 100)
+}
+
+func Int64MinValue() int64 {
+	return math.MinInt64
+}
+
+func Int64MaxValue() int64 {
+	return math.MaxInt64
 }
 
 func TimestampMinValue() time.Time {
