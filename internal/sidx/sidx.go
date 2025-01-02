@@ -16,6 +16,11 @@ type Config struct {
 	VarNamePrefix string
 }
 
+type TemplateValue struct {
+	Config
+	Indices []*spansql.CreateIndex
+}
+
 func Build(ctx context.Context, cfg *Config) ([]byte, error) {
 	if cfg == nil {
 		return nil, errors.New("cfg is nil")
@@ -42,10 +47,6 @@ func Build(ctx context.Context, cfg *Config) ([]byte, error) {
 		indices = append(indices, indexAST)
 	}
 
-	type TemplateValue struct {
-		Config
-		Indices []*spansql.CreateIndex
-	}
 	v := &TemplateValue{
 		Config:  *cfg,
 		Indices: indices,

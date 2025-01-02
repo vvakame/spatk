@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"go/token"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/favclip/genbase"
 	"github.com/vvakame/spatk/internal/sidx"
+	"golang.org/x/tools/go/packages"
 )
 
 var (
@@ -55,14 +56,22 @@ func realMain() error {
 	log.Println(*output)
 
 	if *packageIdent == "" {
-		var pInfo *genbase.PackageInfo
-		p := &genbase.Parser{SkipSemanticsCheck: true}
-		pInfo, err = p.ParsePackageDir(filepath.Dir(*output))
-		if err != nil {
-			return err
+		cfg := &packages.Config{
+			Mode: packages.NeedName,
+			Dir:  filepath.Dir(*output),
+			Fset: token.NewFileSet(),
 		}
 
-		*packageIdent = pInfo.Name()
+		pkgs, err := packages.Load(cfg)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if len(pkgs) != 1 {
+			log.Fatal("1 package expected")
+		}
+
+		*packageIdent = pkgs[0].Name
 	}
 
 	if *varNamePrefix == "" {

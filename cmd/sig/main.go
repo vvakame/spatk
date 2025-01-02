@@ -6,24 +6,20 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
-	"github.com/favclip/genbase"
 	"github.com/vvakame/spatk/internal/sig"
 )
 
 var (
-	command   = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	typeNames = command.String("type", "", "comma-separated list of type names; must be set")
-	output    = command.String("output", "", "output file name; default srcdir/<type>_spanner_info.go")
-	private   = command.Bool("private", false, "generated type name; export or unexport")
+	command = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	output  = command.String("output", "", "output file name; default srcdir/<type>_spanner_info.go")
+	private = command.Bool("private", false, "generated type name; export or unexport")
 )
 
 // Usage is a replacement usage function for the flags package.
 func Usage() {
 	_, _ = fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 	_, _ = fmt.Fprint(os.Stderr, "\tsig [flags] [directory]\n")
-	_, _ = fmt.Fprint(os.Stderr, "\tsig [flags] files... # Must be a single package\n")
 	_, _ = fmt.Fprint(os.Stderr, "Flags:\n")
 	command.PrintDefaults()
 	os.Exit(2)
@@ -45,55 +41,31 @@ func main() {
 		args = []string{"."}
 	}
 
-	var dir string
-	var pInfo *genbase.PackageInfo
-	p := &genbase.Parser{SkipSemanticsCheck: true}
-	if len(args) == 1 && isDirectory(args[0]) {
-		dir = args[0]
-		pInfo, err = p.ParsePackageDir(dir)
-		if err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		dir = filepath.Dir(args[0])
-		pInfo, err = p.ParsePackageFiles(args)
-		if err != nil {
-			log.Fatal(err)
-		}
+	dir := args[0]
+	if !isDirectory(dir) {
+		log.Fatal("first argument must be a directory")
 	}
 
-	var typeInfos genbase.TypeInfos
-	if len(*typeNames) == 0 {
-		typeInfos = pInfo.CollectTaggedTypeInfos("+sig")
-	} else {
-		typeInfos = pInfo.CollectTypeInfos(strings.Split(*typeNames, ","))
-	}
-
-	if len(typeInfos) == 0 {
-		flag.Usage()
-	}
-
-	bu := sig.BuildSource{}
-	err = bu.Parse(pInfo, typeInfos)
+	pkgInfo, err := sig.Parse(dir)
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, st := range bu.Structs {
+
+	pkgInfo.CommandArgs = os.Args[1:]
+	for _, st := range pkgInfo.Structs {
 		st.Private = *private
 	}
 
 	// Format the output.
-	src, err := bu.Emit(nil)
+	src, err := pkgInfo.Emit()
 	if err != nil {
 		log.Printf("warning: internal error: invalid Go generated: %s", err)
-		log.Print("warning: compile the package to analyze the error")
 	}
 
 	// Write to file.
 	outputName := *output
 	if outputName == "" {
-		baseName := fmt.Sprintf("%s_spanner_info.go", typeInfos[0].Name())
-		outputName = filepath.Join(dir, strings.ToLower(baseName))
+		outputName = filepath.Join(dir, "spanner_info_gen.go")
 	}
 	err = os.WriteFile(outputName, src, 0644)
 	if err != nil {

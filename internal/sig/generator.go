@@ -2,40 +2,49 @@ package sig
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"go/ast"
+	"go/format"
+	"go/token"
 	"reflect"
 	"strings"
 	"text/template"
 
-	"github.com/favclip/genbase"
+	"golang.org/x/tools/go/packages"
 )
 
-type BuildSource struct {
-	g         *genbase.Generator
-	pkg       *genbase.PackageInfo
-	typeInfos genbase.TypeInfos
+const markerComment = "+sig"
 
-	Structs []*BuildStruct
+type PackageInfo struct {
+	pkg *packages.Package
+
+	CommandArgs []string
+	ImportSpecs []*ImportSpec
+	Structs     []*StructInfo
 }
 
-type BuildStruct struct {
-	parent   *BuildSource
-	typeInfo *genbase.TypeInfo
+type ImportSpec struct {
+	Path  string
+	Ident string
+}
 
+type StructInfo struct {
+	parent  *PackageInfo
+	Name    string
 	Private bool
-	Fields  []*BuildField
+	Fields  []*FieldInfo
 }
 
-type BuildField struct {
-	parent    *BuildStruct
-	fieldInfo *genbase.FieldInfo
+type FieldInfo struct {
+	parent *StructInfo
 
 	Name string
-	Tag  *BuildTag
+	Tag  *TagInfo
 }
 
-type BuildTag struct {
-	field *BuildField
+type TagInfo struct {
+	field *FieldInfo
 
 	TableName    string // e.g. `sig:"table=FooTable"`
 	Name         string
@@ -44,201 +53,253 @@ type BuildTag struct {
 	Ignore       bool   // e.g. Secret string `spanner:"-"`
 }
 
-// Parse construct *BuildSource from package & type information.
-// deprecated. use *BuildSource#Parse instead.
-func Parse(pkg *genbase.PackageInfo, typeInfos genbase.TypeInfos) (*BuildSource, error) {
-	bu := &BuildSource{
-		g:         genbase.NewGenerator(pkg),
-		pkg:       pkg,
-		typeInfos: typeInfos,
+func Parse(directoryPath string) (*PackageInfo, error) {
+	cfg := &packages.Config{
+		Mode: packages.LoadSyntax,
+		Dir:  directoryPath,
+		Fset: token.NewFileSet(),
 	}
 
-	for _, typeInfo := range typeInfos {
-		err := bu.parseStruct(typeInfo)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return bu, nil
-}
-
-// Parse construct *BuildSource from package & type information.
-func (b *BuildSource) Parse(pkg *genbase.PackageInfo, typeInfos genbase.TypeInfos) error {
-	if b.g == nil {
-		b.g = genbase.NewGenerator(pkg)
-	}
-	b.pkg = pkg
-	b.typeInfos = typeInfos
-
-	for _, typeInfo := range typeInfos {
-		err := b.parseStruct(typeInfo)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (b *BuildSource) parseStruct(typeInfo *genbase.TypeInfo) error {
-	structType, err := typeInfo.StructType()
+	pkgs, err := packages.Load(cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	st := &BuildStruct{
-		parent:   b,
-		typeInfo: typeInfo,
+	if len(pkgs) != 1 {
+		return nil, errors.New("1 package expected")
 	}
 
-	for _, fieldInfo := range structType.FieldInfos() {
-		if len := len(fieldInfo.Names); len == 0 {
-			// embedded struct in outer struct or multiply field declarations
-			// https://play.golang.org/p/bcxbdiMyP4
+	pkg := pkgs[0]
+
+	if len(pkg.Errors) != 0 {
+		var err error
+		for _, pkgErr := range pkg.Errors {
+			err = errors.Join(err, pkgErr)
+		}
+		return nil, err
+	}
+
+	packageInfo := &PackageInfo{
+		pkg: pkg,
+
+		ImportSpecs: []*ImportSpec{
+			{Path: "fmt"},
+			{Path: "github.com/vvakame/spatk/scur"},
+		},
+	}
+
+	var retErr error
+	for _, file := range pkg.Syntax {
+		ast.Inspect(file, func(n ast.Node) bool {
+			genDecl, ok := n.(*ast.GenDecl)
+			if !ok {
+				return true
+			}
+
+			if !strings.Contains(genDecl.Doc.Text(), markerComment) {
+				return true
+			}
+
+			structInfos, err := packageInfo.parseStruct(genDecl)
+			if err != nil {
+				retErr = errors.Join(retErr, err)
+				return false
+			}
+
+			packageInfo.Structs = append(packageInfo.Structs, structInfos...)
+
+			return true
+		})
+	}
+	if retErr != nil {
+		return nil, retErr
+	}
+
+	return packageInfo, nil
+}
+
+func (pkgInfo *PackageInfo) parseStruct(decl *ast.GenDecl) ([]*StructInfo, error) {
+	var structInfos []*StructInfo
+	var retErr error
+	for _, spec := range decl.Specs {
+		typeSpec, ok := spec.(*ast.TypeSpec)
+		if !ok {
+			retErr = errors.Join(retErr, fmt.Errorf("non type spec has +sig comment: %v", pkgInfo.pkg.Fset.Position(spec.Pos()).String()))
+			continue
+		}
+		structType, ok := typeSpec.Type.(*ast.StructType)
+		if !ok {
+			retErr = errors.Join(retErr, fmt.Errorf("non struct type has +sig comment: %v", pkgInfo.pkg.Fset.Position(typeSpec.Pos()).String()))
 			continue
 		}
 
-		for _, nameIdent := range fieldInfo.Names {
-			err := b.parseField(st, typeInfo, fieldInfo, nameIdent.Name)
+		st := &StructInfo{
+			parent: pkgInfo,
+			Name:   typeSpec.Name.Name,
+		}
+
+		for _, field := range structType.Fields.List {
+			if len(field.Names) == 0 {
+				// embedded struct in outer struct or multiply field declarations
+				// https://play.golang.org/p/bcxbdiMyP4
+				continue
+			}
+
+			fieldInfos, err := pkgInfo.parseField(st, field)
 			if err != nil {
-				return err
+				retErr = errors.Join(retErr, err)
+				continue
 			}
+
+			st.Fields = append(st.Fields, fieldInfos...)
 		}
+
+		structInfos = append(structInfos, st)
+	}
+	if retErr != nil {
+		return nil, retErr
 	}
 
-	b.Structs = append(b.Structs, st)
-
-	return nil
+	return structInfos, nil
 }
 
-func (b *BuildSource) parseField(st *BuildStruct, typeInfo *genbase.TypeInfo, fieldInfo *genbase.FieldInfo, name string) error {
-	field := &BuildField{
-		parent:    st,
-		fieldInfo: fieldInfo,
-		Name:      name,
-	}
-	st.Fields = append(st.Fields, field)
-
-	tag := &BuildTag{
-		field: field,
-		Name:  name,
-	}
-	field.Tag = tag
-
-	if fieldInfo.Tag != nil {
-		// remove back quote
-		tagBody := fieldInfo.Tag.Value[1 : len(fieldInfo.Tag.Value)-1]
-		tagKeys := genbase.GetKeys(tagBody)
-		structTag := reflect.StructTag(tagBody)
-		for _, key := range tagKeys {
-			switch key {
-			case "spanner":
-				tagText := structTag.Get("spanner")
-				if tagText == "-" {
-					tag.Ignore = true
-					continue
-				}
-				tag.Name = tagText
-			case "sig":
-				tagText := structTag.Get("sig")
-				attrs := strings.Split(tagText, ",")
-				for _, attr := range attrs {
-					attr = strings.TrimSpace(attr)
-					switch {
-					case strings.HasPrefix(attr, "table="):
-						tag.TableName = attr[len("table="):]
-					case strings.HasPrefix(attr, "minValue="):
-						tag.MinValueFunc = attr[len("minValue="):]
-					case strings.HasPrefix(attr, "maxValue="):
-						tag.MaxValueFunc = attr[len("maxValue="):]
-					default:
-						return fmt.Errorf("unsupported attribute: %s", attr)
-					}
-				}
-			}
+func (pkgInfo *PackageInfo) parseField(st *StructInfo, field *ast.Field) ([]*FieldInfo, error) {
+	var fieldInfos []*FieldInfo
+	var retErr error
+	for _, name := range field.Names {
+		fieldInfo := &FieldInfo{
+			parent: st,
+			Name:   name.Name,
 		}
-	}
 
-	return nil
-}
-
-// Emit generate wrapper code.
-func (b *BuildSource) Emit(args *[]string) ([]byte, error) {
-	b.g.AddImport("fmt", "")
-	b.g.AddImport("github.com/vvakame/spatk/scur", "")
-
-	b.g.PrintHeader("sig", args)
-
-	for _, st := range b.Structs {
-		err := st.emit(b.g)
+		tagInfo, err := pkgInfo.parseTag(fieldInfo, field)
 		if err != nil {
-			return nil, err
+			retErr = errors.Join(retErr, err)
+			continue
+		}
+
+		fieldInfo.Tag = tagInfo
+
+		fieldInfos = append(fieldInfos, fieldInfo)
+	}
+
+	return fieldInfos, nil
+}
+
+func (pkgInfo *PackageInfo) parseTag(bf *FieldInfo, field *ast.Field) (*TagInfo, error) {
+	tagInfo := &TagInfo{
+		field: bf,
+	}
+
+	if field.Tag == nil {
+		return tagInfo, nil
+	}
+
+	// remove back quote
+	tagBody := field.Tag.Value[1 : len(field.Tag.Value)-1]
+	structTag := reflect.StructTag(tagBody)
+
+	{
+		tagText := structTag.Get("spanner")
+		if tagText == "-" {
+			tagInfo.Ignore = true
+		} else {
+			tagInfo.Name = tagText
+		}
+	}
+	{
+		tagText := structTag.Get("sig")
+		if tagText != "" {
+			attrs := strings.Split(tagText, ",")
+			for _, attr := range attrs {
+				attr = strings.TrimSpace(attr)
+				switch {
+				case strings.HasPrefix(attr, "table="):
+					tagInfo.TableName = attr[len("table="):]
+				case strings.HasPrefix(attr, "minValue="):
+					tagInfo.MinValueFunc = attr[len("minValue="):]
+				case strings.HasPrefix(attr, "maxValue="):
+					tagInfo.MaxValueFunc = attr[len("maxValue="):]
+				default:
+					return nil, fmt.Errorf("unsupported attribute: %s", attr)
+				}
+			}
 		}
 	}
 
-	return b.g.Format()
+	return tagInfo, nil
 }
 
-func (st *BuildStruct) emit(g *genbase.Generator) error {
-	tmpl := template.New("struct")
-	tmpl, err := tmpl.Parse(structTemplate)
+func (pkgInfo *PackageInfo) Emit() ([]byte, error) {
+	tmpl := template.New("file")
+	tmpl, err := tmpl.Parse(fileTemplate)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	buf := bytes.NewBufferString("")
-	err = tmpl.Execute(buf, st)
+	err = tmpl.Execute(buf, pkgInfo)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	g.Printf("%s", buf.String())
+	src, err := format.Source(buf.Bytes())
+	if err != nil {
+		return buf.Bytes(), err
+	}
 
-	return nil
+	return src, nil
 }
 
-func (st *BuildStruct) VarPrefix() string {
-	if st.Private {
+func (pkgInfo *PackageInfo) CommandArguments() string {
+	return strings.Join(pkgInfo.CommandArgs, " ")
+}
+
+func (pkgInfo *PackageInfo) PackageIdent() string {
+	return pkgInfo.pkg.Name
+}
+
+func (structInfo *StructInfo) VarPrefix() string {
+	if structInfo.Private {
 		return "spannerInfo"
 	}
 	return "SpannerInfo"
 }
 
-func (st *BuildStruct) TableTypeSuffix() string {
+func (structInfo *StructInfo) TableTypeSuffix() string {
 	return "Table"
 }
 
-func (st *BuildStruct) ColumnTypeSuffix() string {
+func (structInfo *StructInfo) ColumnTypeSuffix() string {
 	return "Column"
 }
 
-func (st *BuildStruct) TableNameMethod() string {
+func (structInfo *StructInfo) TableNameMethod() string {
 	return "TableName"
 }
 
-func (st *BuildStruct) ColumnNamesMethod() string {
+func (structInfo *StructInfo) ColumnNamesMethod() string {
 	return "ColumnNames"
 }
 
 // SimpleName returns struct type name.
-func (st *BuildStruct) SimpleName() string {
-	return st.typeInfo.Name()
+func (structInfo *StructInfo) SimpleName() string {
+	return structInfo.Name
 }
 
 // TableName returns table name from struct.
-func (st *BuildStruct) TableName() string {
-	for _, field := range st.Fields {
+func (structInfo *StructInfo) TableName() string {
+	for _, field := range structInfo.Fields {
 		if field.Tag.TableName != "" {
 			return field.Tag.TableName
 		}
 	}
-	return st.SimpleName()
+	return structInfo.SimpleName()
 }
 
-func (st *BuildStruct) EnabledFields() []*BuildField {
-	var fields []*BuildField
-	for _, f := range st.Fields {
+func (structInfo *StructInfo) EnabledFields() []*FieldInfo {
+	var fields []*FieldInfo
+	for _, f := range structInfo.Fields {
 		if f.Tag.Ignore {
 			continue
 		}
@@ -248,23 +309,23 @@ func (st *BuildStruct) EnabledFields() []*BuildField {
 }
 
 // ColumnName returns column name from field.
-func (fi *BuildField) ColumnName() string {
-	if fi.Tag != nil && fi.Tag.Name != "" {
-		return fi.Tag.Name
+func (fieldInfo *FieldInfo) ColumnName() string {
+	if fieldInfo.Tag != nil && fieldInfo.Tag.Name != "" {
+		return fieldInfo.Tag.Name
 	}
-	return fi.Name
+	return fieldInfo.Name
 }
 
-func (fi *BuildField) MinValueFunc() string {
-	if fi.Tag != nil && fi.Tag.MinValueFunc != "" {
-		return fi.Tag.MinValueFunc
+func (fieldInfo *FieldInfo) MinValueFunc() string {
+	if fieldInfo.Tag != nil && fieldInfo.Tag.MinValueFunc != "" {
+		return fieldInfo.Tag.MinValueFunc
 	}
 	return ""
 }
 
-func (fi *BuildField) MaxValueFunc() string {
-	if fi.Tag != nil && fi.Tag.MaxValueFunc != "" {
-		return fi.Tag.MaxValueFunc
+func (fieldInfo *FieldInfo) MaxValueFunc() string {
+	if fieldInfo.Tag != nil && fieldInfo.Tag.MaxValueFunc != "" {
+		return fieldInfo.Tag.MaxValueFunc
 	}
 	return ""
 }

@@ -39,16 +39,19 @@ func (table spannerInfoModelATable) TableName() string {
 	}
 	return tableName
 }
+
 func (table spannerInfoModelATable) As(aliasName string) spannerInfoModelATable {
 	copied := table.copy()
 	copied.alias = aliasName
 	return copied
 }
+
 func (table spannerInfoModelATable) ForceIndex(indexName string) spannerInfoModelATable {
 	copied := table.copy()
 	copied.forceIndex = indexName
 	return copied
 }
+
 func (table spannerInfoModelATable) ColumnNames() []string {
 	return []string{
 		table.ID(),
@@ -57,6 +60,7 @@ func (table spannerInfoModelATable) ColumnNames() []string {
 		table.CreatedAt(),
 	}
 }
+
 func (table spannerInfoModelATable) copy() spannerInfoModelATable {
 	copied := table
 	columns := make([]spannerInfoModelAColumn, len(table.columns))
@@ -75,11 +79,13 @@ func (table spannerInfoModelATable) ID() string {
 	}
 	return columnName
 }
+
 func (table spannerInfoModelATable) IDAs(aliasName string) spannerInfoModelATable {
 	copied := table.copy()
 	copied.columns[0].alias = aliasName
 	return copied
 }
+
 func (table spannerInfoModelATable) IDCursor(order scur.Order) *scur.CursorParameter {
 	return &scur.CursorParameter{
 		Name:  table.ID(),
@@ -93,6 +99,7 @@ func (table spannerInfoModelATable) IDCursor(order scur.Order) *scur.CursorParam
 		},
 	}
 }
+
 func (table spannerInfoModelATable) Name() string {
 	column := table.columns[1]
 	columnName := column.name
@@ -104,11 +111,13 @@ func (table spannerInfoModelATable) Name() string {
 	}
 	return columnName
 }
+
 func (table spannerInfoModelATable) NameAs(aliasName string) spannerInfoModelATable {
 	copied := table.copy()
 	copied.columns[1].alias = aliasName
 	return copied
 }
+
 func (table spannerInfoModelATable) NameCursor(order scur.Order) *scur.CursorParameter {
 	return &scur.CursorParameter{
 		Name:  table.Name(),
@@ -122,6 +131,7 @@ func (table spannerInfoModelATable) NameCursor(order scur.Order) *scur.CursorPar
 		},
 	}
 }
+
 func (table spannerInfoModelATable) UpdatedAt() string {
 	column := table.columns[2]
 	columnName := column.name
@@ -133,11 +143,13 @@ func (table spannerInfoModelATable) UpdatedAt() string {
 	}
 	return columnName
 }
+
 func (table spannerInfoModelATable) UpdatedAtAs(aliasName string) spannerInfoModelATable {
 	copied := table.copy()
 	copied.columns[2].alias = aliasName
 	return copied
 }
+
 func (table spannerInfoModelATable) UpdatedAtCursor(order scur.Order) *scur.CursorParameter {
 	return &scur.CursorParameter{
 		Name:  table.UpdatedAt(),
@@ -151,6 +163,7 @@ func (table spannerInfoModelATable) UpdatedAtCursor(order scur.Order) *scur.Curs
 		},
 	}
 }
+
 func (table spannerInfoModelATable) CreatedAt() string {
 	column := table.columns[3]
 	columnName := column.name
@@ -162,11 +175,13 @@ func (table spannerInfoModelATable) CreatedAt() string {
 	}
 	return columnName
 }
+
 func (table spannerInfoModelATable) CreatedAtAs(aliasName string) spannerInfoModelATable {
 	copied := table.copy()
 	copied.columns[3].alias = aliasName
 	return copied
 }
+
 func (table spannerInfoModelATable) CreatedAtCursor(order scur.Order) *scur.CursorParameter {
 	return &scur.CursorParameter{
 		Name:  table.CreatedAt(),
@@ -213,16 +228,19 @@ func (table spannerInfoModelBTable) TableName() string {
 	}
 	return tableName
 }
+
 func (table spannerInfoModelBTable) As(aliasName string) spannerInfoModelBTable {
 	copied := table.copy()
 	copied.alias = aliasName
 	return copied
 }
+
 func (table spannerInfoModelBTable) ForceIndex(indexName string) spannerInfoModelBTable {
 	copied := table.copy()
 	copied.forceIndex = indexName
 	return copied
 }
+
 func (table spannerInfoModelBTable) ColumnNames() []string {
 	return []string{
 		table.ID(),
@@ -231,6 +249,7 @@ func (table spannerInfoModelBTable) ColumnNames() []string {
 		table.CreatedAt(),
 	}
 }
+
 func (table spannerInfoModelBTable) copy() spannerInfoModelBTable {
 	copied := table
 	columns := make([]spannerInfoModelBColumn, len(table.columns))
@@ -249,11 +268,13 @@ func (table spannerInfoModelBTable) ID() string {
 	}
 	return columnName
 }
+
 func (table spannerInfoModelBTable) IDAs(aliasName string) spannerInfoModelBTable {
 	copied := table.copy()
 	copied.columns[0].alias = aliasName
 	return copied
 }
+
 func (table spannerInfoModelBTable) IDCursor(order scur.Order) *scur.CursorParameter {
 	return &scur.CursorParameter{
 		Name:  table.ID(),
@@ -267,6 +288,7 @@ func (table spannerInfoModelBTable) IDCursor(order scur.Order) *scur.CursorParam
 		},
 	}
 }
+
 func (table spannerInfoModelBTable) Name() string {
 	column := table.columns[1]
 	columnName := column.name
@@ -278,11 +300,13 @@ func (table spannerInfoModelBTable) Name() string {
 	}
 	return columnName
 }
+
 func (table spannerInfoModelBTable) NameAs(aliasName string) spannerInfoModelBTable {
 	copied := table.copy()
 	copied.columns[1].alias = aliasName
 	return copied
 }
+
 func (table spannerInfoModelBTable) NameCursor(order scur.Order) *scur.CursorParameter {
 	return &scur.CursorParameter{
 		Name:  table.Name(),
@@ -296,6 +320,7 @@ func (table spannerInfoModelBTable) NameCursor(order scur.Order) *scur.CursorPar
 		},
 	}
 }
+
 func (table spannerInfoModelBTable) UpdatedAt() string {
 	column := table.columns[2]
 	columnName := column.name
@@ -307,11 +332,13 @@ func (table spannerInfoModelBTable) UpdatedAt() string {
 	}
 	return columnName
 }
+
 func (table spannerInfoModelBTable) UpdatedAtAs(aliasName string) spannerInfoModelBTable {
 	copied := table.copy()
 	copied.columns[2].alias = aliasName
 	return copied
 }
+
 func (table spannerInfoModelBTable) UpdatedAtCursor(order scur.Order) *scur.CursorParameter {
 	return &scur.CursorParameter{
 		Name:     table.UpdatedAt(),
@@ -327,6 +354,7 @@ func (table spannerInfoModelBTable) UpdatedAtCursor(order scur.Order) *scur.Curs
 		},
 	}
 }
+
 func (table spannerInfoModelBTable) CreatedAt() string {
 	column := table.columns[3]
 	columnName := column.name
@@ -338,11 +366,13 @@ func (table spannerInfoModelBTable) CreatedAt() string {
 	}
 	return columnName
 }
+
 func (table spannerInfoModelBTable) CreatedAtAs(aliasName string) spannerInfoModelBTable {
 	copied := table.copy()
 	copied.columns[3].alias = aliasName
 	return copied
 }
+
 func (table spannerInfoModelBTable) CreatedAtCursor(order scur.Order) *scur.CursorParameter {
 	return &scur.CursorParameter{
 		Name:  table.CreatedAt(),

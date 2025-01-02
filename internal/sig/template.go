@@ -2,5 +2,5 @@ package sig
 
 import _ "embed"
 
-//go:embed struct.go.tmpl
-var structTemplate string
+//go:embed file.go.tmpl
+var fileTemplate string
