@@ -79,6 +79,12 @@ func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) cop
 		return &scur.CursorParameter{
 			Name:  table.{{$f.Name}}(),
 			Order: order,
+			{{ if ne $f.MinValueFunc "" -}}
+				MinValue: {{$f.MinValueFunc}}(),
+			{{ end -}}
+			{{ if ne $f.MaxValueFunc "" -}}
+				MaxValue: {{$f.MaxValueFunc}}(),
+			{{ end -}}
 			ToValue: func(obj any) any {
 				v, ok := obj.(*{{ $st.SimpleName }})
 				if !ok || v == nil {

@@ -37,9 +37,11 @@ type BuildField struct {
 type BuildTag struct {
 	field *BuildField
 
-	TableName string // e.g. `sig:"table=FooTable"`
-	Name      string
-	Ignore    bool // e.g. Secret string `spanner:"-"`
+	TableName    string // e.g. `sig:"table=FooTable"`
+	Name         string
+	MinValueFunc string // e.g. `sig:"minValue=TimestampMinValue"`
+	MaxValueFunc string // e.g. `sig:"maxValue=TimestampMaxValue"`
+	Ignore       bool   // e.g. Secret string `spanner:"-"`
 }
 
 // Parse construct *BuildSource from package & type information.
@@ -130,21 +132,26 @@ func (b *BuildSource) parseField(st *BuildStruct, typeInfo *genbase.TypeInfo, fi
 		tagKeys := genbase.GetKeys(tagBody)
 		structTag := reflect.StructTag(tagBody)
 		for _, key := range tagKeys {
-			if key == "spanner" {
+			switch key {
+			case "spanner":
 				tagText := structTag.Get("spanner")
 				if tagText == "-" {
 					tag.Ignore = true
 					continue
 				}
 				tag.Name = tagText
-			} else if key == "sig" {
+			case "sig":
 				tagText := structTag.Get("sig")
 				attrs := strings.Split(tagText, ",")
 				for _, attr := range attrs {
 					attr = strings.TrimSpace(attr)
 					switch {
-					case strings.HasPrefix(tagText, "table="):
-						tag.TableName = tagText[len("table="):]
+					case strings.HasPrefix(attr, "table="):
+						tag.TableName = attr[len("table="):]
+					case strings.HasPrefix(attr, "minValue="):
+						tag.MinValueFunc = attr[len("minValue="):]
+					case strings.HasPrefix(attr, "maxValue="):
+						tag.MaxValueFunc = attr[len("maxValue="):]
 					default:
 						return fmt.Errorf("unsupported attribute: %s", attr)
 					}
@@ -246,4 +253,18 @@ func (fi *BuildField) ColumnName() string {
 		return fi.Tag.Name
 	}
 	return fi.Name
+}
+
+func (fi *BuildField) MinValueFunc() string {
+	if fi.Tag != nil && fi.Tag.MinValueFunc != "" {
+		return fi.Tag.MinValueFunc
+	}
+	return ""
+}
+
+func (fi *BuildField) MaxValueFunc() string {
+	if fi.Tag != nil && fi.Tag.MaxValueFunc != "" {
+		return fi.Tag.MaxValueFunc
+	}
+	return ""
 }

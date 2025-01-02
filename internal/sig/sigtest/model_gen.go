@@ -314,8 +314,10 @@ func (table spannerInfoModelBTable) UpdatedAtAs(aliasName string) spannerInfoMod
 }
 func (table spannerInfoModelBTable) UpdatedAtCursor(order scur.Order) *scur.CursorParameter {
 	return &scur.CursorParameter{
-		Name:  table.UpdatedAt(),
-		Order: order,
+		Name:     table.UpdatedAt(),
+		Order:    order,
+		MinValue: TimestampMinValue(),
+		MaxValue: TimestampMaxValue(),
 		ToValue: func(obj any) any {
 			v, ok := obj.(*ModelBar)
 			if !ok || v == nil {
