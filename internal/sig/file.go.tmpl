@@ -5,107 +5,116 @@
 package {{ .PackageIdent }}
 
 {{ if .ImportSpecs -}}
-import (
-	{{- range $importSpec := .ImportSpecs}}
-		{{ if ne $importSpec.Ident "" -}} {{ $importSpec.Ident }} {{ end -}}
-		"{{.Path}}"
-	{{- end}}
-)
+	import (
+		{{- range $importSpec := .ImportSpecs }}
+			{{ if ne $importSpec.Ident "" -}} {{ $importSpec.Ident }} {{- end }} "{{.Path}}"
+		{{- end }}
+	)
+{{ end -}}
+
+{{ define "struct" }}
+{{- /* gotype: github.com/vvakame/spatk/internal/sig.StructInfo */ -}}
+var {{ .VarPrefix }}{{ .TableName }} = {{ .VarPrefix }}{{ .TableName }}{{ .TableTypeSuffix }}{
+	name: "{{ .TableName }}",
+	columns: []{{ .VarPrefix }}{{ .TableName }}{{ .ColumnTypeSuffix }}{
+		{{- range $idx, $f := .EnabledFields }}
+			{name: "{{$f.ColumnName}}"},
+		{{- end}}
+	},
+}
+
+type {{ .VarPrefix }}{{ .TableName }}{{ .TableTypeSuffix }} struct {
+	name       string
+	alias      string
+	forceIndex string
+	columns    []{{ .VarPrefix }}{{ .TableName }}{{ .ColumnTypeSuffix }}
+}
+
+type {{ .VarPrefix }}{{ .TableName }}{{ .ColumnTypeSuffix }} struct {
+	name  string
+	alias string
+}
+
+func (table {{ .VarPrefix }}{{ .TableName }}{{ .TableTypeSuffix }}) {{ .TableNameMethod }}() string {
+	tableName := table.name
+	if table.forceIndex != "" {
+		tableName = fmt.Sprintf("%s@{FORCE_INDEX=%s}", tableName, table.forceIndex)
+	}
+	if table.alias != "" {
+		tableName = fmt.Sprintf("%s AS %s", tableName, table.alias)
+	}
+	return tableName
+}
+
+func (table {{ .VarPrefix }}{{ .TableName }}{{ .TableTypeSuffix }}) As(aliasName string) {{ .VarPrefix }}{{ .TableName }}{{ .TableTypeSuffix }} {
+	copied := table.copy()
+	copied.alias = aliasName
+	return copied
+}
+
+func (table {{ .VarPrefix }}{{ .TableName }}{{ .TableTypeSuffix }}) ForceIndex(indexName string) {{ .VarPrefix }}{{ .TableName }}{{ .TableTypeSuffix }} {
+	copied := table.copy()
+	copied.forceIndex = indexName
+	return copied
+}
+
+func (table {{ .VarPrefix }}{{ .TableName }}{{ .TableTypeSuffix }}) {{ .ColumnNamesMethod }}() []string {
+	return []string{
+		{{- range $idx, $f := .EnabledFields }}
+			table.{{$f.Name}}(),
+		{{- end}}
+	}
+}
+
+func (table {{ .VarPrefix }}{{ .TableName }}{{ .TableTypeSuffix }}) copy() {{ .VarPrefix }}{{ .TableName }}{{ .TableTypeSuffix }} {
+	copied := table
+	columns := make([]{{ .VarPrefix }}{{ .TableName }}{{ .ColumnTypeSuffix }}, len(table.columns))
+	copy(columns, table.columns)
+	copied.columns = columns
+	return copied
+}
+
+{{- range $idx, $f := .EnabledFields}}
+	func (table {{ $.VarPrefix }}{{ $.TableName }}{{ $.TableTypeSuffix }}) {{$f.Name}}() string {
+		column := table.columns[{{ $idx }}]
+		columnName := column.name
+		if table.alias != "" {
+			columnName = fmt.Sprintf("%s.%s", table.alias, columnName)
+		}
+		if column.alias != "" {
+			return fmt.Sprintf("%s AS %s", columnName, column.alias)
+		}
+		return columnName
+	}
+
+	func (table {{ $.VarPrefix }}{{ $.TableName }}{{ $.TableTypeSuffix }}) {{$f.Name}}As(aliasName string) {{ $.VarPrefix }}{{ $.TableName }}{{ $.TableTypeSuffix }} {
+		copied := table.copy()
+		copied.columns[{{ $idx }}].alias = aliasName
+		return copied
+	}
+
+	func (table {{ $.VarPrefix }}{{ $.TableName }}{{ $.TableTypeSuffix }}) {{$f.Name}}Cursor(order scur.Order) *scur.CursorParameter {
+		return &scur.CursorParameter{
+			Name:  table.{{$f.Name}}(),
+			Order: order,
+			{{ if ne $f.MinValueFunc "" -}}
+				MinValue: {{$f.MinValueFunc}}(),
+			{{ end -}}
+			{{ if ne $f.MaxValueFunc "" -}}
+				MaxValue: {{$f.MaxValueFunc}}(),
+			{{ end -}}
+			ToValue: func(obj any) any {
+				v, ok := obj.(*{{ $.SimpleName }})
+				if !ok || v == nil {
+					panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+				}
+				return v.{{$f.Name}}
+			},
+		}
+	}
+{{ end }}
 {{ end -}}
 
 {{ range $st := .Structs -}}
-	var {{ $st.VarPrefix }}{{ $st.TableName }} = {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}{
-		name: "{{ $st.TableName }}",
-		columns: []{{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.ColumnTypeSuffix }}{
-	{{- range $idx, $f := $st.EnabledFields}}
-			{name: "{{$f.ColumnName}}"},
-	{{- end}}
-		},
-	}
-
-	type {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }} struct {
-		name       string
-		alias      string
-		forceIndex string
-		columns    []{{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.ColumnTypeSuffix }}
-	}
-
-	type {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.ColumnTypeSuffix }} struct {
-		name  string
-		alias string
-	}
-
-	func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) {{ $st.TableNameMethod }}() string {
-		tableName := table.name
-		if table.forceIndex != "" {
-			tableName = fmt.Sprintf("%s@{FORCE_INDEX=%s}", tableName, table.forceIndex)
-		}
-		if table.alias != "" {
-			tableName = fmt.Sprintf("%s AS %s", tableName, table.alias)
-		}
-		return tableName
-	}
-	func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) As(aliasName string) {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }} {
-		copied := table.copy()
-		copied.alias = aliasName
-		return copied
-	}
-	func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) ForceIndex(indexName string) {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }} {
-		copied := table.copy()
-		copied.forceIndex = indexName
-		return copied
-	}
-	func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) {{ $st.ColumnNamesMethod }}() []string {
-		return []string{
-			{{- range $idx, $f := $st.EnabledFields}}
-				table.{{$f.Name}}(),
-			{{- end}}
-		}
-	}
-	func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) copy() {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }} {
-		copied := table
-		columns := make([]{{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.ColumnTypeSuffix }}, len(table.columns))
-		copy(columns, table.columns)
-		copied.columns = columns
-		return copied
-	}
-
-
-	{{- range $idx, $f := $st.EnabledFields}}
-		func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) {{$f.Name}}() string {
-			column := table.columns[{{ $idx }}]
-			columnName := column.name
-			if table.alias != "" {
-				columnName = fmt.Sprintf("%s.%s", table.alias, columnName)
-			}
-			if column.alias != "" {
-				return fmt.Sprintf("%s AS %s", columnName, column.alias)
-			}
-			return columnName
-		}
-		func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) {{$f.Name}}As(aliasName string) {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }} {
-			copied := table.copy()
-			copied.columns[{{ $idx }}].alias = aliasName
-			return copied
-		}
-		func (table {{ $st.VarPrefix }}{{ $st.TableName }}{{ $st.TableTypeSuffix }}) {{$f.Name}}Cursor(order scur.Order) *scur.CursorParameter {
-			return &scur.CursorParameter{
-				Name:  table.{{$f.Name}}(),
-				Order: order,
-				{{ if ne $f.MinValueFunc "" -}}
-					MinValue: {{$f.MinValueFunc}}(),
-				{{ end -}}
-				{{ if ne $f.MaxValueFunc "" -}}
-					MaxValue: {{$f.MaxValueFunc}}(),
-				{{ end -}}
-				ToValue: func(obj any) any {
-					v, ok := obj.(*{{ $st.SimpleName }})
-					if !ok || v == nil {
-						panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
-					}
-					return v.{{$f.Name}}
-				},
-			}
-		}
-	{{- end}}
+	{{ template "struct" $st }}
 {{ end -}}

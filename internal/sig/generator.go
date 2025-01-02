@@ -231,7 +231,7 @@ func (pkgInfo *PackageInfo) parseTag(bf *FieldInfo, field *ast.Field) (*TagInfo,
 }
 
 func (pkgInfo *PackageInfo) Emit() ([]byte, error) {
-	tmpl := template.New("struct")
+	tmpl := template.New("file")
 	tmpl, err := tmpl.Parse(fileTemplate)
 	if err != nil {
 		return nil, err
