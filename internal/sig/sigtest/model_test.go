@@ -3,6 +3,8 @@ package sigtest
 import (
 	"reflect"
 	"testing"
+
+	"github.com/vvakame/spatk/scur"
 )
 
 func TestGeneratedModel(t *testing.T) {
@@ -49,10 +51,58 @@ func TestGeneratedModel(t *testing.T) {
 				t.Errorf("unexpected: %v", v)
 			}
 		})
+		t.Run("min/max values", func(t *testing.T) {
+			if v := spannerInfoModelA.IDCursor(scur.OrderAsc); v.MinValue == nil {
+				t.Errorf("unexpected: %v", v)
+			}
+			if v := spannerInfoModelA.IDCursor(scur.OrderAsc); v.MaxValue == nil {
+				t.Errorf("unexpected: %v", v)
+			}
+			if v := spannerInfoModelA.NameCursor(scur.OrderDesc); v.MinValue == nil {
+				t.Errorf("unexpected: %v", v)
+			}
+			if v := spannerInfoModelA.NameCursor(scur.OrderDesc); v.MaxValue == nil {
+				t.Errorf("unexpected: %v", v)
+			}
+			if v := spannerInfoModelA.CreatedAtCursor(scur.OrderDesc); v.MinValue == nil {
+				t.Errorf("unexpected: %v", v)
+			}
+			if v := spannerInfoModelA.CreatedAtCursor(scur.OrderDesc); v.MaxValue == nil {
+				t.Errorf("unexpected: %v", v)
+			}
+		})
 	})
 	t.Run("ModelB", func(t *testing.T) {
 		t.Run("table name", func(t *testing.T) {
 			if v := spannerInfoModelB.TableName(); v != "ModelB" {
+				t.Errorf("unexpected: %v", v)
+			}
+		})
+	})
+	t.Run("ModelC", func(t *testing.T) {
+		t.Run("min/max values", func(t *testing.T) {
+			if v := spannerInfoModelC.IDCursor(scur.OrderAsc); v.MinValue == nil {
+				t.Errorf("unexpected: %v", v)
+			}
+			if v := spannerInfoModelC.IDCursor(scur.OrderAsc); v.MaxValue == nil {
+				t.Errorf("unexpected: %v", v)
+			}
+			if v := spannerInfoModelC.UUIDCursor(scur.OrderDesc); v.MinValue == nil {
+				t.Errorf("unexpected: %v", v)
+			}
+			if v := spannerInfoModelC.UUIDCursor(scur.OrderDesc); v.MaxValue == nil {
+				t.Errorf("unexpected: %v", v)
+			}
+			if v := spannerInfoModelC.LocalType1Cursor(scur.OrderAsc); v.MinValue == nil {
+				t.Errorf("unexpected: %v", v)
+			}
+			if v := spannerInfoModelC.LocalType1Cursor(scur.OrderAsc); v.MaxValue == nil {
+				t.Errorf("unexpected: %v", v)
+			}
+			if v := spannerInfoModelC.LocalType2Cursor(scur.OrderDesc); v.MinValue == nil {
+				t.Errorf("unexpected: %v", v)
+			}
+			if v := spannerInfoModelC.LocalType2Cursor(scur.OrderDesc); v.MaxValue == nil {
 				t.Errorf("unexpected: %v", v)
 			}
 		})
