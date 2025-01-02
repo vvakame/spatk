@@ -193,6 +193,18 @@ OUTER:
 		case isBasicKindOrUnderlying(typ, types.String):
 			fieldInfo.defaultMinValueFunc = "scur.StringMinValue"
 			fieldInfo.defaultMaxValueFunc = "scur.StringMaxValue"
+		case isBasicKindOrUnderlying(typ, types.Int),
+			isBasicKindOrUnderlying(typ, types.Int8),
+			isBasicKindOrUnderlying(typ, types.Int16),
+			isBasicKindOrUnderlying(typ, types.Int32),
+			isBasicKindOrUnderlying(typ, types.Int64),
+			isBasicKindOrUnderlying(typ, types.Uint),
+			isBasicKindOrUnderlying(typ, types.Uint8),
+			isBasicKindOrUnderlying(typ, types.Uint16),
+			isBasicKindOrUnderlying(typ, types.Uint32):
+			// isBasicKindOrUnderlying(typ, types.Uint64) can't be supported
+			fieldInfo.defaultMinValueFunc = "scur.Int64MinValue"
+			fieldInfo.defaultMaxValueFunc = "scur.Int64MaxValue"
 		case isTimeTime(typ):
 			fieldInfo.defaultMinValueFunc = "scur.TimestampMinValue"
 			fieldInfo.defaultMaxValueFunc = "scur.TimestampMaxValue"
@@ -211,7 +223,8 @@ OUTER:
 				}
 			}
 			if minValueFunc == "" || maxValueFunc == "" {
-				continue
+				// continue to process
+				break
 			}
 
 			for ident, def := range pkgInfo.pkg.TypesInfo.Defs {

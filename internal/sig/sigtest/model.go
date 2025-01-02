@@ -42,12 +42,13 @@ type Time time.Time
 
 // +sig
 type ModelC struct {
-	TableName   string     `spanner:"-" sig:"table=ModelC"`
-	ID          ModelBID   `spanner:"ModelCID"`
-	OwnTimeType Time       ``
-	UUID        uuid.UUID  ``
-	LocalType1  localType  ``
-	LocalType2  *localType ``
+	TableName    string     `spanner:"-" sig:"table=ModelC"`
+	ID           string     `spanner:"ModelCID"`
+	OwnTimeType  Time       ``
+	UUID         uuid.UUID  ``
+	LocalType1   localType  ``
+	LocalType2   *localType ``
+	IgnoreColumn string     `spanner:"-"`
 }
 
 // TimeSpannerMinValue is a helper function to get min value of Time type.
@@ -100,4 +101,11 @@ func localTypePointerSpannerMaxValue() *localType {
 	return &localType{
 		Int: math.MaxInt,
 	}
+}
+
+// +sig
+type ModelD struct {
+	ID        string `spanner:"ModelDID"`
+	IntValue  int    ``
+	BoolValue bool   ``
 }
