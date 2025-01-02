@@ -7,6 +7,7 @@ import (
 	"go/ast"
 	"go/format"
 	"go/token"
+	"go/types"
 	"reflect"
 	"strings"
 	"text/template"
@@ -39,8 +40,10 @@ type StructInfo struct {
 type FieldInfo struct {
 	parent *StructInfo
 
-	Name string
-	Tag  *TagInfo
+	Name                string
+	defaultMinValueFunc string
+	defaultMaxValueFunc string
+	Tag                 *TagInfo
 }
 
 type TagInfo struct {
@@ -124,12 +127,24 @@ func (pkgInfo *PackageInfo) parseStruct(decl *ast.GenDecl) ([]*StructInfo, error
 	for _, spec := range decl.Specs {
 		typeSpec, ok := spec.(*ast.TypeSpec)
 		if !ok {
-			retErr = errors.Join(retErr, fmt.Errorf("non type spec has +sig comment: %v", pkgInfo.pkg.Fset.Position(spec.Pos()).String()))
+			retErr = errors.Join(
+				retErr,
+				fmt.Errorf(
+					"%s: non type spec has +sig comment",
+					pkgInfo.pkg.Fset.Position(spec.Pos()).String(),
+				),
+			)
 			continue
 		}
 		structType, ok := typeSpec.Type.(*ast.StructType)
 		if !ok {
-			retErr = errors.Join(retErr, fmt.Errorf("non struct type has +sig comment: %v", pkgInfo.pkg.Fset.Position(typeSpec.Pos()).String()))
+			retErr = errors.Join(
+				retErr,
+				fmt.Errorf(
+					"%s: non struct type has +sig comment",
+					pkgInfo.pkg.Fset.Position(typeSpec.Pos()).String(),
+				),
+			)
 			continue
 		}
 
@@ -166,10 +181,77 @@ func (pkgInfo *PackageInfo) parseStruct(decl *ast.GenDecl) ([]*StructInfo, error
 func (pkgInfo *PackageInfo) parseField(st *StructInfo, field *ast.Field) ([]*FieldInfo, error) {
 	var fieldInfos []*FieldInfo
 	var retErr error
+OUTER:
 	for _, name := range field.Names {
 		fieldInfo := &FieldInfo{
 			parent: st,
 			Name:   name.Name,
+		}
+
+		typ := pkgInfo.pkg.TypesInfo.TypeOf(field.Type)
+		switch {
+		case isBasicKindOrUnderlying(typ, types.String):
+			fieldInfo.defaultMinValueFunc = "scur.StringMinValue"
+			fieldInfo.defaultMaxValueFunc = "scur.StringMaxValue"
+		case isTimeTime(typ):
+			fieldInfo.defaultMinValueFunc = "scur.TimestampMinValue"
+			fieldInfo.defaultMaxValueFunc = "scur.TimestampMaxValue"
+		default:
+			var minValueFunc string
+			var maxValueFunc string
+			if namedType, ok := typ.(*types.Named); ok {
+				typeName := namedType.Obj().Name()
+				minValueFunc = typeName + "SpannerMinValue"
+				maxValueFunc = typeName + "SpannerMaxValue"
+			} else if pointerType, ok := typ.(*types.Pointer); ok {
+				if namedType, ok := pointerType.Elem().(*types.Named); ok {
+					typeName := namedType.Obj().Name()
+					minValueFunc = typeName + "PointerSpannerMinValue"
+					maxValueFunc = typeName + "PointerSpannerMaxValue"
+				}
+			}
+			if minValueFunc == "" || maxValueFunc == "" {
+				continue
+			}
+
+			for ident, def := range pkgInfo.pkg.TypesInfo.Defs {
+				// function can be min/max value generator.
+				fn, ok := def.(*types.Func)
+				if !ok {
+					continue
+				}
+				if fn.Signature().Recv() != nil {
+					continue
+				}
+
+				rets := fn.Signature().Results()
+				if rets.Len() != 1 {
+					continue
+				}
+				ret := rets.At(0)
+
+				switch ident.Name {
+				case minValueFunc:
+					fieldInfo.defaultMinValueFunc = minValueFunc
+				case maxValueFunc:
+					fieldInfo.defaultMaxValueFunc = maxValueFunc
+				default:
+					continue
+				}
+
+				if !types.AssignableTo(ret.Type(), typ) {
+					retErr = errors.Join(
+						retErr,
+						fmt.Errorf(
+							"%s: function %s return type is not same as field type: %s",
+							pkgInfo.pkg.Fset.Position(ret.Pos()).String(),
+							ident.Name,
+							typ.String(),
+						),
+					)
+					continue OUTER
+				}
+			}
 		}
 
 		tagInfo, err := pkgInfo.parseTag(fieldInfo, field)
@@ -181,6 +263,9 @@ func (pkgInfo *PackageInfo) parseField(st *StructInfo, field *ast.Field) ([]*Fie
 		fieldInfo.Tag = tagInfo
 
 		fieldInfos = append(fieldInfos, fieldInfo)
+	}
+	if retErr != nil {
+		return nil, retErr
 	}
 
 	return fieldInfos, nil
@@ -216,10 +301,18 @@ func (pkgInfo *PackageInfo) parseTag(bf *FieldInfo, field *ast.Field) (*TagInfo,
 				switch {
 				case strings.HasPrefix(attr, "table="):
 					tagInfo.TableName = attr[len("table="):]
-				case strings.HasPrefix(attr, "minValue="):
-					tagInfo.MinValueFunc = attr[len("minValue="):]
-				case strings.HasPrefix(attr, "maxValue="):
-					tagInfo.MaxValueFunc = attr[len("maxValue="):]
+
+				case strings.HasPrefix(attr, "min="):
+					tagInfo.MinValueFunc = attr[len("min="):]
+
+				case strings.HasPrefix(attr, "max="):
+					tagInfo.MaxValueFunc = attr[len("max="):]
+
+				case strings.HasPrefix(attr, "minmax="):
+					prefix := attr[len("minmax="):]
+					tagInfo.MinValueFunc = prefix + "MinValue"
+					tagInfo.MaxValueFunc = prefix + "MaxValue"
+
 				default:
 					return nil, fmt.Errorf("unsupported attribute: %s", attr)
 				}
@@ -320,12 +413,12 @@ func (fieldInfo *FieldInfo) MinValueFunc() string {
 	if fieldInfo.Tag != nil && fieldInfo.Tag.MinValueFunc != "" {
 		return fieldInfo.Tag.MinValueFunc
 	}
-	return ""
+	return fieldInfo.defaultMinValueFunc
 }
 
 func (fieldInfo *FieldInfo) MaxValueFunc() string {
 	if fieldInfo.Tag != nil && fieldInfo.Tag.MaxValueFunc != "" {
 		return fieldInfo.Tag.MaxValueFunc
 	}
-	return ""
+	return fieldInfo.defaultMaxValueFunc
 }
