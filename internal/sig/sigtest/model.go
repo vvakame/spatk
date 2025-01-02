@@ -2,7 +2,11 @@
 
 package sigtest
 
-import "time"
+import (
+	"time"
+
+	"github.com/vvakame/spatk/scur"
+)
 
 type ModelAID string
 type ModelBID string
@@ -20,6 +24,14 @@ type ModelBar struct {
 	TableName string   `spanner:"-" sig:"table=ModelB"`
 	ID        ModelBID `spanner:"ModelBID"`
 	Name      string
-	UpdatedAt time.Time
+	UpdatedAt time.Time `sig:"minValue=TimestampMinValue,maxValue=TimestampMaxValue"`
 	CreatedAt time.Time
+}
+
+func TimestampMinValue() time.Time {
+	return scur.TimestampMinValue()
+}
+
+func TimestampMaxValue() time.Time {
+	return scur.TimestampMaxValue()
 }
