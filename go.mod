@@ -1,11 +1,12 @@
 module github.com/vvakame/spatk
 
-go 1.23
+go 1.24.0
+
 require (
 	cloud.google.com/go/spanner v1.73.0
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/google/uuid v1.6.0
-	golang.org/x/tools v0.31.0
+	golang.org/x/tools v0.40.0
 	google.golang.org/api v0.214.0
 	google.golang.org/genproto v0.0.0-20241230172942-26aa7a208def
 )
@@ -43,13 +44,13 @@ require (
 	go.opentelemetry.io/otel/sdk v1.29.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.29.0 // indirect
 	go.opentelemetry.io/otel/trace v1.29.0 // indirect
-	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/crypto v0.46.0 // indirect
+	golang.org/x/mod v0.31.0 // indirect
+	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
-	golang.org/x/sync v0.12.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/text v0.32.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241223144023-3abc09e42ca8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241223144023-3abc09e42ca8 // indirect
