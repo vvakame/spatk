@@ -109,3 +109,12 @@ type ModelD struct {
 	IntValue  int    ``
 	BoolValue bool   ``
 }
+
+// +sig
+// ModelE demonstrates Generated Column support with read-only tag.
+type ModelE struct {
+	ID        string `spanner:"ModelEID"`
+	FirstName string ``
+	LastName  string ``
+	FullName  string `spanner:"FullName;->"` // Generated column: FirstName || ' ' || LastName
+}

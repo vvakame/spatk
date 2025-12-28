@@ -66,6 +66,14 @@ func (table {{ .VarPrefix }}{{ .TableName }}{{ .TableTypeSuffix }}) {{ .ColumnNa
 	}
 }
 
+func (table {{ .VarPrefix }}{{ .TableName }}{{ .TableTypeSuffix }}) {{ .WritableColumnNamesMethod }}() []string {
+	return []string{
+		{{- range $idx, $f := .WritableFields }}
+			table.{{$f.Name}}(),
+		{{- end}}
+	}
+}
+
 func (table {{ .VarPrefix }}{{ .TableName }}{{ .TableTypeSuffix }}) copy() {{ .VarPrefix }}{{ .TableName }}{{ .TableTypeSuffix }} {
 	copied := table
 	columns := make([]{{ .VarPrefix }}{{ .TableName }}{{ .ColumnTypeSuffix }}, len(table.columns))

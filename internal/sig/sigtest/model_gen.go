@@ -61,6 +61,15 @@ func (table spannerInfoModelATable) ColumnNames() []string {
 	}
 }
 
+func (table spannerInfoModelATable) WritableColumnNames() []string {
+	return []string{
+		table.ID(),
+		table.Name(),
+		table.UpdatedAt(),
+		table.CreatedAt(),
+	}
+}
+
 func (table spannerInfoModelATable) copy() spannerInfoModelATable {
 	copied := table
 	columns := make([]spannerInfoModelAColumn, len(table.columns))
@@ -250,6 +259,15 @@ func (table spannerInfoModelBTable) ForceIndex(indexName string) spannerInfoMode
 }
 
 func (table spannerInfoModelBTable) ColumnNames() []string {
+	return []string{
+		table.ID(),
+		table.Name(),
+		table.UpdatedAt(),
+		table.CreatedAt(),
+	}
+}
+
+func (table spannerInfoModelBTable) WritableColumnNames() []string {
 	return []string{
 		table.ID(),
 		table.Name(),
@@ -448,6 +466,16 @@ func (table spannerInfoModelCTable) ForceIndex(indexName string) spannerInfoMode
 }
 
 func (table spannerInfoModelCTable) ColumnNames() []string {
+	return []string{
+		table.ID(),
+		table.OwnTimeType(),
+		table.UUID(),
+		table.LocalType1(),
+		table.LocalType2(),
+	}
+}
+
+func (table spannerInfoModelCTable) WritableColumnNames() []string {
 	return []string{
 		table.ID(),
 		table.OwnTimeType(),
@@ -686,6 +714,14 @@ func (table spannerInfoModelDTable) ColumnNames() []string {
 	}
 }
 
+func (table spannerInfoModelDTable) WritableColumnNames() []string {
+	return []string{
+		table.ID(),
+		table.IntValue(),
+		table.BoolValue(),
+	}
+}
+
 func (table spannerInfoModelDTable) copy() spannerInfoModelDTable {
 	copied := table
 	columns := make([]spannerInfoModelDColumn, len(table.columns))
@@ -789,6 +825,211 @@ func (table spannerInfoModelDTable) BoolValueCursor(order scur.Order) *scur.Curs
 				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
 			}
 			return v.BoolValue
+		},
+	}
+}
+
+var spannerInfoModelE = spannerInfoModelETable{
+	name: "ModelE",
+	columns: []spannerInfoModelEColumn{
+		{name: "ModelEID"},
+		{name: "FirstName"},
+		{name: "LastName"},
+		{name: "FullName"},
+	},
+}
+
+type spannerInfoModelETable struct {
+	name       string
+	alias      string
+	forceIndex string
+	columns    []spannerInfoModelEColumn
+}
+
+type spannerInfoModelEColumn struct {
+	name  string
+	alias string
+}
+
+func (table spannerInfoModelETable) TableName() string {
+	tableName := table.name
+	if table.forceIndex != "" {
+		tableName = fmt.Sprintf("%s@{FORCE_INDEX=%s}", tableName, table.forceIndex)
+	}
+	if table.alias != "" {
+		tableName = fmt.Sprintf("%s AS %s", tableName, table.alias)
+	}
+	return tableName
+}
+
+func (table spannerInfoModelETable) As(aliasName string) spannerInfoModelETable {
+	copied := table.copy()
+	copied.alias = aliasName
+	return copied
+}
+
+func (table spannerInfoModelETable) ForceIndex(indexName string) spannerInfoModelETable {
+	copied := table.copy()
+	copied.forceIndex = indexName
+	return copied
+}
+
+func (table spannerInfoModelETable) ColumnNames() []string {
+	return []string{
+		table.ID(),
+		table.FirstName(),
+		table.LastName(),
+		table.FullName(),
+	}
+}
+
+func (table spannerInfoModelETable) WritableColumnNames() []string {
+	return []string{
+		table.ID(),
+		table.FirstName(),
+		table.LastName(),
+	}
+}
+
+func (table spannerInfoModelETable) copy() spannerInfoModelETable {
+	copied := table
+	columns := make([]spannerInfoModelEColumn, len(table.columns))
+	copy(columns, table.columns)
+	copied.columns = columns
+	return copied
+}
+func (table spannerInfoModelETable) ID() string {
+	column := table.columns[0]
+	columnName := column.name
+	if table.alias != "" {
+		columnName = fmt.Sprintf("%s.%s", table.alias, columnName)
+	}
+	if column.alias != "" {
+		return fmt.Sprintf("%s AS %s", columnName, column.alias)
+	}
+	return columnName
+}
+
+func (table spannerInfoModelETable) IDAs(aliasName string) spannerInfoModelETable {
+	copied := table.copy()
+	copied.columns[0].alias = aliasName
+	return copied
+}
+
+func (table spannerInfoModelETable) IDCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:     table.ID(),
+		Order:    order,
+		MinValue: scur.StringMinValue(),
+		MaxValue: scur.StringMaxValue(),
+		ToValue: func(obj any) any {
+			v, ok := obj.(*ModelE)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.ID
+		},
+	}
+}
+
+func (table spannerInfoModelETable) FirstName() string {
+	column := table.columns[1]
+	columnName := column.name
+	if table.alias != "" {
+		columnName = fmt.Sprintf("%s.%s", table.alias, columnName)
+	}
+	if column.alias != "" {
+		return fmt.Sprintf("%s AS %s", columnName, column.alias)
+	}
+	return columnName
+}
+
+func (table spannerInfoModelETable) FirstNameAs(aliasName string) spannerInfoModelETable {
+	copied := table.copy()
+	copied.columns[1].alias = aliasName
+	return copied
+}
+
+func (table spannerInfoModelETable) FirstNameCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:     table.FirstName(),
+		Order:    order,
+		MinValue: scur.StringMinValue(),
+		MaxValue: scur.StringMaxValue(),
+		ToValue: func(obj any) any {
+			v, ok := obj.(*ModelE)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.FirstName
+		},
+	}
+}
+
+func (table spannerInfoModelETable) LastName() string {
+	column := table.columns[2]
+	columnName := column.name
+	if table.alias != "" {
+		columnName = fmt.Sprintf("%s.%s", table.alias, columnName)
+	}
+	if column.alias != "" {
+		return fmt.Sprintf("%s AS %s", columnName, column.alias)
+	}
+	return columnName
+}
+
+func (table spannerInfoModelETable) LastNameAs(aliasName string) spannerInfoModelETable {
+	copied := table.copy()
+	copied.columns[2].alias = aliasName
+	return copied
+}
+
+func (table spannerInfoModelETable) LastNameCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:     table.LastName(),
+		Order:    order,
+		MinValue: scur.StringMinValue(),
+		MaxValue: scur.StringMaxValue(),
+		ToValue: func(obj any) any {
+			v, ok := obj.(*ModelE)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.LastName
+		},
+	}
+}
+
+func (table spannerInfoModelETable) FullName() string {
+	column := table.columns[3]
+	columnName := column.name
+	if table.alias != "" {
+		columnName = fmt.Sprintf("%s.%s", table.alias, columnName)
+	}
+	if column.alias != "" {
+		return fmt.Sprintf("%s AS %s", columnName, column.alias)
+	}
+	return columnName
+}
+
+func (table spannerInfoModelETable) FullNameAs(aliasName string) spannerInfoModelETable {
+	copied := table.copy()
+	copied.columns[3].alias = aliasName
+	return copied
+}
+
+func (table spannerInfoModelETable) FullNameCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:     table.FullName(),
+		Order:    order,
+		MinValue: scur.StringMinValue(),
+		MaxValue: scur.StringMaxValue(),
+		ToValue: func(obj any) any {
+			v, ok := obj.(*ModelE)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.FullName
 		},
 	}
 }
