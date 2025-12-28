@@ -4,10 +4,10 @@ on:
   push:
     branches:
       - master
-  pull_request_target: {}
+  pull_request: {}
 
 env:
-  GCLOUD_VERSION: "497.0.0"
+  GCLOUD_VERSION: "550.0.0"
 
 jobs:
   test:
@@ -19,7 +19,7 @@ jobs:
       contents: read
     services:
       spanner_emulator:
-        image: gcr.io/cloud-spanner-emulator/emulator:1.5.25
+        image: gcr.io/cloud-spanner-emulator/emulator:1.5.46
         ports:
           - "9010:9010"
           - "9020:9020" # for health check
@@ -27,8 +27,6 @@ jobs:
         # options: --health-cmd "curl http://localhost:9020 --silent --retry-connrefused" --health-interval 1s --health-timeout 30s
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
         with:
           go-version-file: go.mod
