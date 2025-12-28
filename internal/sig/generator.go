@@ -54,6 +54,7 @@ type TagInfo struct {
 	MinValueFunc string // e.g. `sig:"minValue=TimestampMinValue"`
 	MaxValueFunc string // e.g. `sig:"maxValue=TimestampMaxValue"`
 	Ignore       bool   // e.g. Secret string `spanner:"-"`
+	ReadOnly     bool   // e.g. Generated string `spanner:"FullName;readOnly"` for generated columns
 }
 
 func Parse(directoryPath string) (*PackageInfo, error) {
@@ -302,7 +303,19 @@ func (pkgInfo *PackageInfo) parseTag(bf *FieldInfo, field *ast.Field) (*TagInfo,
 		if tagText == "-" {
 			tagInfo.Ignore = true
 		} else {
-			tagInfo.Name = tagText
+			// Parse spanner tag with options: "column_name;->" format for read-only columns
+			// "->" marks a field as read-only (for generated columns)
+			// See: https://github.com/googleapis/google-cloud-go/pull/12895
+			parts := strings.Split(tagText, ";")
+			if len(parts) > 0 && parts[0] != "->" {
+				tagInfo.Name = parts[0]
+			}
+			for _, opt := range parts {
+				opt = strings.TrimSpace(opt)
+				if opt == "->" {
+					tagInfo.ReadOnly = true
+				}
+			}
 		}
 	}
 	{
@@ -412,6 +425,36 @@ func (structInfo *StructInfo) EnabledFields() []*FieldInfo {
 		fields = append(fields, f)
 	}
 	return fields
+}
+
+func (structInfo *StructInfo) WritableFields() []*FieldInfo {
+	var fields []*FieldInfo
+	for _, f := range structInfo.Fields {
+		if f.Tag.Ignore {
+			continue
+		}
+		if f.Tag.ReadOnly {
+			continue
+		}
+		fields = append(fields, f)
+	}
+	return fields
+}
+
+func (structInfo *StructInfo) HasReadOnlyFields() bool {
+	for _, f := range structInfo.Fields {
+		if f.Tag.Ignore {
+			continue
+		}
+		if f.Tag.ReadOnly {
+			return true
+		}
+	}
+	return false
+}
+
+func (structInfo *StructInfo) WritableColumnNamesMethod() string {
+	return "WritableColumnNames"
 }
 
 // ColumnName returns column name from field.

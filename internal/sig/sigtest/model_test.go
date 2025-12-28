@@ -107,4 +107,26 @@ func TestGeneratedModel(t *testing.T) {
 			}
 		})
 	})
+	t.Run("ModelE", func(t *testing.T) {
+		t.Run("read-only columns (generated columns)", func(t *testing.T) {
+			// ColumnNames returns all columns including read-only ones
+			allColumns := spannerInfoModelE.ColumnNames()
+			expected := []string{"ModelEID", "FirstName", "LastName", "FullName"}
+			if !reflect.DeepEqual(allColumns, expected) {
+				t.Errorf("ColumnNames: expected %v, got %v", expected, allColumns)
+			}
+
+			// WritableColumnNames excludes read-only columns
+			writableColumns := spannerInfoModelE.WritableColumnNames()
+			expectedWritable := []string{"ModelEID", "FirstName", "LastName"}
+			if !reflect.DeepEqual(writableColumns, expectedWritable) {
+				t.Errorf("WritableColumnNames: expected %v, got %v", expectedWritable, writableColumns)
+			}
+		})
+		t.Run("table name", func(t *testing.T) {
+			if v := spannerInfoModelE.TableName(); v != "ModelE" {
+				t.Errorf("unexpected: %v", v)
+			}
+		})
+	})
 }
