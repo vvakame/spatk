@@ -3,7 +3,7 @@
 {{ template "packageHeader" .}}
 {{- $b := . -}}
 {{- range $_, $idx := .Indices -}}
-// {{ $b.VarNamePrefix }}{{ $idx.Name }} contains index for {{ $idx.Table }} table.
+// {{ $b.VarNamePrefix }}{{ $idx.Name.SQL }} contains index for {{ $idx.TableName.SQL }} table.
 // "{{ $idx.SQL }}".
-const {{ $b.VarNamePrefix }}{{ $idx.Name }} = "{{ $idx.Name }}"
+const {{ $b.VarNamePrefix }}{{ $idx.Name.SQL }} = "{{ $idx.Name.SQL }}"
 {{ end -}}

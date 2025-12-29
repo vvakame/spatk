@@ -129,4 +129,27 @@ func TestGeneratedModel(t *testing.T) {
 			}
 		})
 	})
+	t.Run("ModelF", func(t *testing.T) {
+		t.Run("read-only columns with ARRAY source (generated columns)", func(t *testing.T) {
+			// ColumnNames returns all columns including read-only ones
+			// This tests generated column like: COALESCE(Spaces[SAFE_OFFSET(0)], "")
+			allColumns := spannerInfoModelF.ColumnNames()
+			expected := []string{"ModelFID", "Spaces", "FirstSpace"}
+			if !reflect.DeepEqual(allColumns, expected) {
+				t.Errorf("ColumnNames: expected %v, got %v", expected, allColumns)
+			}
+
+			// WritableColumnNames excludes read-only columns
+			writableColumns := spannerInfoModelF.WritableColumnNames()
+			expectedWritable := []string{"ModelFID", "Spaces"}
+			if !reflect.DeepEqual(writableColumns, expectedWritable) {
+				t.Errorf("WritableColumnNames: expected %v, got %v", expectedWritable, writableColumns)
+			}
+		})
+		t.Run("table name", func(t *testing.T) {
+			if v := spannerInfoModelF.TableName(); v != "ModelF" {
+				t.Errorf("unexpected: %v", v)
+			}
+		})
+	})
 }

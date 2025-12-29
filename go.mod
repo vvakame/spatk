@@ -5,6 +5,7 @@ go 1.24.0
 require (
 	cloud.google.com/go/spanner v1.87.0
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
+	github.com/cloudspannerecosystem/memefish v0.6.2
 	github.com/google/uuid v1.6.0
 	golang.org/x/tools v0.40.0
 	google.golang.org/api v0.258.0
