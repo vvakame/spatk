@@ -7,7 +7,8 @@ import (
 	goformat "go/format"
 	"text/template"
 
-	"cloud.google.com/go/spanner/spansql"
+	"github.com/cloudspannerecosystem/memefish"
+	"github.com/cloudspannerecosystem/memefish/ast"
 )
 
 type Config struct {
@@ -18,7 +19,7 @@ type Config struct {
 
 type TemplateValue struct {
 	Config
-	Indices []*spansql.CreateIndex
+	Indices []*ast.CreateIndex
 }
 
 func Build(ctx context.Context, cfg *Config) ([]byte, error) {
@@ -32,14 +33,14 @@ func Build(ctx context.Context, cfg *Config) ([]byte, error) {
 		cfg.VarNamePrefix = "spannerIndex"
 	}
 
-	ddl, err := spansql.ParseDDL("-", cfg.DDL)
+	ddlStmts, err := memefish.ParseDDLs("-", cfg.DDL)
 	if err != nil {
 		return nil, err
 	}
 
-	var indices []*spansql.CreateIndex
-	for _, ddlStmt := range ddl.List {
-		indexAST, ok := ddlStmt.(*spansql.CreateIndex)
+	var indices []*ast.CreateIndex
+	for _, ddlStmt := range ddlStmts {
+		indexAST, ok := ddlStmt.(*ast.CreateIndex)
 		if !ok {
 			continue
 		}
