@@ -118,3 +118,12 @@ type ModelE struct {
 	LastName  string ``
 	FullName  string `spanner:"FullName;->"` // Generated column: FirstName || ' ' || LastName
 }
+
+// +sig
+// ModelF demonstrates Generated Column with ARRAY and COALESCE functions.
+// SQL: FirstSpace STRING(MAX) NOT NULL AS (COALESCE(Spaces[SAFE_OFFSET(0)], "")) STORED
+type ModelF struct {
+	ID         string   `spanner:"ModelFID"`
+	Spaces     []string ``
+	FirstSpace string   `spanner:"FirstSpace;->"` // Generated column: COALESCE(Spaces[SAFE_OFFSET(0)], "")
+}

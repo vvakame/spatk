@@ -1033,3 +1033,169 @@ func (table spannerInfoModelETable) FullNameCursor(order scur.Order) *scur.Curso
 		},
 	}
 }
+
+var spannerInfoModelF = spannerInfoModelFTable{
+	name: "ModelF",
+	columns: []spannerInfoModelFColumn{
+		{name: "ModelFID"},
+		{name: "Spaces"},
+		{name: "FirstSpace"},
+	},
+}
+
+type spannerInfoModelFTable struct {
+	name       string
+	alias      string
+	forceIndex string
+	columns    []spannerInfoModelFColumn
+}
+
+type spannerInfoModelFColumn struct {
+	name  string
+	alias string
+}
+
+func (table spannerInfoModelFTable) TableName() string {
+	tableName := table.name
+	if table.forceIndex != "" {
+		tableName = fmt.Sprintf("%s@{FORCE_INDEX=%s}", tableName, table.forceIndex)
+	}
+	if table.alias != "" {
+		tableName = fmt.Sprintf("%s AS %s", tableName, table.alias)
+	}
+	return tableName
+}
+
+func (table spannerInfoModelFTable) As(aliasName string) spannerInfoModelFTable {
+	copied := table.copy()
+	copied.alias = aliasName
+	return copied
+}
+
+func (table spannerInfoModelFTable) ForceIndex(indexName string) spannerInfoModelFTable {
+	copied := table.copy()
+	copied.forceIndex = indexName
+	return copied
+}
+
+func (table spannerInfoModelFTable) ColumnNames() []string {
+	return []string{
+		table.ID(),
+		table.Spaces(),
+		table.FirstSpace(),
+	}
+}
+
+func (table spannerInfoModelFTable) WritableColumnNames() []string {
+	return []string{
+		table.ID(),
+		table.Spaces(),
+	}
+}
+
+func (table spannerInfoModelFTable) copy() spannerInfoModelFTable {
+	copied := table
+	columns := make([]spannerInfoModelFColumn, len(table.columns))
+	copy(columns, table.columns)
+	copied.columns = columns
+	return copied
+}
+func (table spannerInfoModelFTable) ID() string {
+	column := table.columns[0]
+	columnName := column.name
+	if table.alias != "" {
+		columnName = fmt.Sprintf("%s.%s", table.alias, columnName)
+	}
+	if column.alias != "" {
+		return fmt.Sprintf("%s AS %s", columnName, column.alias)
+	}
+	return columnName
+}
+
+func (table spannerInfoModelFTable) IDAs(aliasName string) spannerInfoModelFTable {
+	copied := table.copy()
+	copied.columns[0].alias = aliasName
+	return copied
+}
+
+func (table spannerInfoModelFTable) IDCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:     table.ID(),
+		Order:    order,
+		MinValue: scur.StringMinValue(),
+		MaxValue: scur.StringMaxValue(),
+		ToValue: func(obj any) any {
+			v, ok := obj.(*ModelF)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.ID
+		},
+	}
+}
+
+func (table spannerInfoModelFTable) Spaces() string {
+	column := table.columns[1]
+	columnName := column.name
+	if table.alias != "" {
+		columnName = fmt.Sprintf("%s.%s", table.alias, columnName)
+	}
+	if column.alias != "" {
+		return fmt.Sprintf("%s AS %s", columnName, column.alias)
+	}
+	return columnName
+}
+
+func (table spannerInfoModelFTable) SpacesAs(aliasName string) spannerInfoModelFTable {
+	copied := table.copy()
+	copied.columns[1].alias = aliasName
+	return copied
+}
+
+func (table spannerInfoModelFTable) SpacesCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:  table.Spaces(),
+		Order: order,
+		ToValue: func(obj any) any {
+			v, ok := obj.(*ModelF)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.Spaces
+		},
+	}
+}
+
+func (table spannerInfoModelFTable) FirstSpace() string {
+	column := table.columns[2]
+	columnName := column.name
+	if table.alias != "" {
+		columnName = fmt.Sprintf("%s.%s", table.alias, columnName)
+	}
+	if column.alias != "" {
+		return fmt.Sprintf("%s AS %s", columnName, column.alias)
+	}
+	return columnName
+}
+
+func (table spannerInfoModelFTable) FirstSpaceAs(aliasName string) spannerInfoModelFTable {
+	copied := table.copy()
+	copied.columns[2].alias = aliasName
+	return copied
+}
+
+func (table spannerInfoModelFTable) FirstSpaceCursor(order scur.Order) *scur.CursorParameter {
+	return &scur.CursorParameter{
+		Name:     table.FirstSpace(),
+		Order:    order,
+		MinValue: scur.StringMinValue(),
+		MaxValue: scur.StringMaxValue(),
+		ToValue: func(obj any) any {
+			v, ok := obj.(*ModelF)
+			if !ok || v == nil {
+				panic(fmt.Sprintf("unexpected cursor object type: %T", obj))
+			}
+			return v.FirstSpace
+		},
+	}
+}
