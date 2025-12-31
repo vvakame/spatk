@@ -105,11 +105,16 @@ func (table {{ .VarPrefix }}{{ .TableName }}{{ .TableTypeSuffix }}) copy() {{ .V
 		return &scur.CursorParameter{
 			Name:  table.{{$f.Name}}(),
 			Order: order,
-			{{ if ne $f.MinValueFunc "" -}}
-				MinValue: {{$f.MinValueFunc}}(),
-			{{ end -}}
-			{{ if ne $f.MaxValueFunc "" -}}
-				MaxValue: {{$f.MaxValueFunc}}(),
+			{{ if $f.PanicFallback -}}
+				MinValue: func() any { panic("sig: type info unavailable for field {{ $.SimpleName }}.{{$f.Name}} due to compile errors; fix errors and regenerate") }(),
+				MaxValue: func() any { panic("sig: type info unavailable for field {{ $.SimpleName }}.{{$f.Name}} due to compile errors; fix errors and regenerate") }(),
+			{{ else -}}
+				{{ if ne $f.MinValueFunc "" -}}
+					MinValue: {{$f.MinValueFunc}}(),
+				{{ end -}}
+				{{ if ne $f.MaxValueFunc "" -}}
+					MaxValue: {{$f.MaxValueFunc}}(),
+				{{ end -}}
 			{{ end -}}
 			ToValue: func(obj any) any {
 				v, ok := obj.(*{{ $.SimpleName }})
