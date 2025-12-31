@@ -8,6 +8,7 @@ import (
 	"go/format"
 	"go/token"
 	"go/types"
+	"os"
 	"reflect"
 	"strings"
 	"text/template"
@@ -17,8 +18,17 @@ import (
 
 const markerComment = "+sig"
 
+// ParseOptions contains options for Parse function.
+type ParseOptions struct {
+	// AllowErrors allows code generation even when source has compile errors.
+	// Fields with unknown types will generate panic() calls.
+	AllowErrors bool
+}
+
 type PackageInfo struct {
 	pkg *packages.Package
+
+	allowErrors bool
 
 	CommandArgs []string
 	ImportSpecs []*ImportSpec
@@ -44,6 +54,10 @@ type FieldInfo struct {
 	defaultMinValueFunc string
 	defaultMaxValueFunc string
 	Tag                 *TagInfo
+
+	// PanicFallback is true when type information is unavailable (due to compile errors)
+	// and the generated code should use panic() calls instead.
+	PanicFallback bool
 }
 
 type TagInfo struct {
@@ -57,7 +71,11 @@ type TagInfo struct {
 	ReadOnly     bool   // e.g. Generated string `spanner:"FullName;readOnly"` for generated columns
 }
 
-func Parse(directoryPath string) (*PackageInfo, error) {
+func Parse(directoryPath string, opts *ParseOptions) (*PackageInfo, error) {
+	if opts == nil {
+		opts = &ParseOptions{}
+	}
+
 	cfg := &packages.Config{
 		Mode: packages.LoadSyntax,
 		Dir:  directoryPath,
@@ -76,15 +94,22 @@ func Parse(directoryPath string) (*PackageInfo, error) {
 	pkg := pkgs[0]
 
 	if len(pkg.Errors) != 0 {
-		var err error
-		for _, pkgErr := range pkg.Errors {
-			err = errors.Join(err, pkgErr)
+		if !opts.AllowErrors {
+			var err error
+			for _, pkgErr := range pkg.Errors {
+				err = errors.Join(err, pkgErr)
+			}
+			return nil, err
 		}
-		return nil, err
+		// When AllowErrors is true, log errors but continue processing
+		for _, pkgErr := range pkg.Errors {
+			fmt.Fprintf(os.Stderr, "sig: warning: %v\n", pkgErr)
+		}
 	}
 
 	packageInfo := &PackageInfo{
-		pkg: pkg,
+		pkg:         pkg,
+		allowErrors: opts.AllowErrors,
 
 		ImportSpecs: []*ImportSpec{
 			{Path: "fmt"},
@@ -189,8 +214,32 @@ OUTER:
 			Name:   name.Name,
 		}
 
-		typ := pkgInfo.pkg.TypesInfo.TypeOf(field.Type)
+		var typ types.Type
+		if pkgInfo.pkg.TypesInfo != nil {
+			typ = pkgInfo.pkg.TypesInfo.TypeOf(field.Type)
+		}
+
+		// When type info is not available or invalid (due to compile errors), use panic fallback
+		if isInvalidOrNil(typ) {
+			if pkgInfo.allowErrors {
+				fieldInfo.PanicFallback = true
+				fmt.Fprintf(os.Stderr, "sig: warning: type info unavailable for field %s.%s, using panic fallback\n", st.Name, name.Name)
+			} else {
+				retErr = errors.Join(
+					retErr,
+					fmt.Errorf(
+						"%s: type info unavailable for field %s (compile error?)",
+						pkgInfo.pkg.Fset.Position(field.Pos()).String(),
+						name.Name,
+					),
+				)
+				continue
+			}
+		}
+
 		switch {
+		case isInvalidOrNil(typ):
+			// Already handled above with PanicFallback
 		case isBasicKindOrUnderlying(typ, types.String):
 			fieldInfo.defaultMinValueFunc = "scur.StringMinValue"
 			fieldInfo.defaultMaxValueFunc = "scur.StringMaxValue"

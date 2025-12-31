@@ -11,9 +11,10 @@ import (
 )
 
 var (
-	command = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	output  = command.String("output", "", "output file name; default srcdir/<type>_spanner_info.go")
-	private = command.Bool("private", false, "generated type name; export or unexport")
+	command     = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	output      = command.String("output", "", "output file name; default srcdir/<type>_spanner_info.go")
+	private     = command.Bool("private", false, "generated type name; export or unexport")
+	allowErrors = command.Bool("allow-errors", false, "allow code generation even if source has compile errors (methods for unknown types will panic)")
 )
 
 // Usage is a replacement usage function for the flags package.
@@ -46,7 +47,9 @@ func main() {
 		log.Fatal("first argument must be a directory")
 	}
 
-	pkgInfo, err := sig.Parse(dir)
+	pkgInfo, err := sig.Parse(dir, &sig.ParseOptions{
+		AllowErrors: *allowErrors,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
