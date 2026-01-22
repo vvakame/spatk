@@ -11,6 +11,7 @@ var _ SelectBuilder = (*builder)(nil)
 var _ FromBuilder = (*builder)(nil)
 var _ WhereBuilder = (*builder)(nil)
 var _ OrderByBuilder = (*builder)(nil)
+var _ LimitBuilder = (*builder)(nil)
 
 type step int
 
@@ -24,6 +25,7 @@ const (
 	stepWhere
 	stepOrderBy
 	stepLimit
+	stepForUpdate
 )
 
 type builder struct {
@@ -35,11 +37,12 @@ type builder struct {
 
 	currentStep step
 
-	flagSelect  bool
-	flagSet     bool
-	flagFrom    bool
-	flagWhere   bool
-	flagOrderBy bool
+	flagSelect        bool
+	flagSet           bool
+	flagFrom          bool
+	flagWhere         bool
+	flagOrderBy       bool
+	isSelectStatement bool
 }
 
 func (b *builder) writeToken(token string) {
@@ -104,6 +107,7 @@ func (b *builder) Build() (string, error) {
 func (b *builder) Select() SelectBuilder {
 	if b.currentStep == stepInit {
 		b.currentStep = stepSelect
+		b.isSelectStatement = true
 		b.writeToken("SELECT")
 		b.incrementIndent()
 	} else if b.currentStep != stepSelect {
@@ -334,7 +338,7 @@ func (b *builder) O(token ...string) OrderByBuilder {
 	return b
 }
 
-func (b *builder) Limit(limit string) VoidBuilder {
+func (b *builder) Limit(limit string) LimitBuilder {
 	if b.currentStep == stepSelect || b.currentStep == stepFrom || b.currentStep == stepWhere || b.currentStep == stepOrderBy {
 		b.currentStep = stepLimit
 		b.newLine()
@@ -346,5 +350,23 @@ func (b *builder) Limit(limit string) VoidBuilder {
 
 	b.writeToken(limit)
 
+	return b
+}
+
+func (b *builder) ForUpdate() VoidBuilder {
+	if !b.isSelectStatement {
+		b.writeError("FOR UPDATE is only valid for SELECT statements")
+		return b
+	}
+
+	switch b.currentStep {
+	case stepFrom, stepWhere, stepOrderBy, stepLimit:
+		b.currentStep = stepForUpdate
+		b.newLine()
+		b.decrementIndent()
+		b.writeToken("FOR UPDATE")
+	default:
+		b.writeError("unexpected FOR UPDATE keyword")
+	}
 	return b
 }
