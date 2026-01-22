@@ -24,7 +24,7 @@ type Builder interface {
 	From() FromBuilder
 	Where() WhereBuilder
 	OrderBy() OrderByBuilder
-	Limit(limit string) VoidBuilder
+	Limit(limit string) LimitBuilder
 }
 
 // SelectBuilder provides functionality of SELECT statement building.
@@ -55,6 +55,7 @@ type FromBuilder interface {
 	VoidBuilder
 	Name(tableName string, at ...string) FromBuilder
 	Where() WhereBuilder
+	ForUpdate() VoidBuilder
 }
 
 // SetBuilder provides functionality of SET clause building.
@@ -68,13 +69,21 @@ type WhereBuilder interface {
 	VoidBuilder
 	E(token ...string) WhereBuilder
 	OrderBy() OrderByBuilder
+	ForUpdate() VoidBuilder
 }
 
 // OrderByBuilder provides functionality of ORDER BY statement building.
 type OrderByBuilder interface {
 	VoidBuilder
 	O(token ...string) OrderByBuilder
-	Limit(limit string) VoidBuilder
+	Limit(limit string) LimitBuilder
+	ForUpdate() VoidBuilder
+}
+
+// LimitBuilder provides functionality of LIMIT clause building.
+type LimitBuilder interface {
+	VoidBuilder
+	ForUpdate() VoidBuilder
 }
 
 // VoidBuilder provides Build termination method.

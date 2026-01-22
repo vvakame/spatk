@@ -204,6 +204,116 @@ func TestNewBuilder(t *testing.T) {
 				LIMIT 1 !ERR2:%[1]sunexpected LIMIT keyword%[1]s! 2
 			`, "`")),
 		},
+		{
+			name: "SELECT FOR UPDATE after FROM",
+			builder: func() Builder {
+				qb := NewBuilder()
+				qb.Select().C("MarketingBudget").
+					From().Name("Albums").
+					ForUpdate()
+				return qb
+			},
+			expected: strings.TrimSpace(heredoc.Doc(`
+				SELECT
+				  MarketingBudget
+				FROM
+				  Albums
+				FOR UPDATE
+			`)),
+		},
+		{
+			name: "SELECT FOR UPDATE after WHERE",
+			builder: func() Builder {
+				qb := NewBuilder()
+				qb.Select().C("MarketingBudget").
+					From().Name("Albums").
+					Where().E("SingerId = @singerId").
+					ForUpdate()
+				return qb
+			},
+			expected: strings.TrimSpace(heredoc.Doc(`
+				SELECT
+				  MarketingBudget
+				FROM
+				  Albums
+				WHERE
+				  SingerId = @singerId
+				FOR UPDATE
+			`)),
+		},
+		{
+			name: "SELECT FOR UPDATE after ORDER BY",
+			builder: func() Builder {
+				qb := NewBuilder()
+				qb.Select().C("*").
+					From().Name("Orders").
+					Where().E("ID = @id").
+					OrderBy().O("CreatedAt DESC").
+					ForUpdate()
+				return qb
+			},
+			expected: strings.TrimSpace(heredoc.Doc(`
+				SELECT
+				  *
+				FROM
+				  Orders
+				WHERE
+				  ID = @id
+				ORDER BY
+				  CreatedAt DESC
+				FOR UPDATE
+			`)),
+		},
+		{
+			name: "SELECT FOR UPDATE after LIMIT",
+			builder: func() Builder {
+				qb := NewBuilder()
+				qb.Select().C("*").
+					From().Name("Orders").
+					Where().E("ID = @id").
+					OrderBy().O("CreatedAt DESC").
+					Limit("10").
+					ForUpdate()
+				return qb
+			},
+			expected: strings.TrimSpace(heredoc.Doc(`
+				SELECT
+				  *
+				FROM
+				  Orders
+				WHERE
+				  ID = @id
+				ORDER BY
+				  CreatedAt DESC
+				LIMIT 10
+				FOR UPDATE
+			`)),
+		},
+		{
+			name: "SELECT FOR UPDATE wo indent",
+			builder: func() Builder {
+				qb := NewBuilder(NoIndent())
+				qb.Select().C("*").
+					From().Name("Orders").
+					Where().E("ID = @id").
+					ForUpdate()
+				return qb
+			},
+			expected: heredoc.Doc("SELECT * FROM Orders WHERE ID = @id FOR UPDATE"),
+		},
+		{
+			name: "FOR UPDATE error - after DELETE",
+			builder: func() Builder {
+				qb := NewBuilder()
+				qb.Delete().From().Name("FOO").ForUpdate()
+				return qb
+			},
+			wantError: strings.TrimSpace(heredoc.Docf(`
+				1 error(s) occured! DELETE
+				FROM
+				  FOO !ERR1:%[1]sFOR UPDATE is only valid for SELECT statements%[1]s!
+			`, "`")),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
